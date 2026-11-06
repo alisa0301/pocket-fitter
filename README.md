@@ -1,1 +1,40 @@
-# pocket-fitter
+# Pocket Fitter
+
+Since AI Hackathon project. Python (FastAPI) backend + React (Vite, TypeScript) frontend. AI agent sessions tracked with [Entire](https://docs.entire.io).
+
+## Structure
+
+```
+backend/    FastAPI app (uv)
+  app/main.py         app + CORS
+  app/api/routes.py   /api/health, /api/echo
+  app/core/config.py  settings from .env
+  tests/
+frontend/   React + Vite + TS, proxies /api -> :8000
+```
+
+## Quick start
+
+Requires Python 3.11+, [uv](https://docs.astral.sh/uv/), Node 20+.
+
+```bash
+make install
+cp backend/.env.example backend/.env
+make backend    # http://localhost:8000/docs
+make frontend   # http://localhost:5173
+```
+
+## Entire
+
+Install the CLI (see https://docs.entire.io/platforms/cli), then in the repo root:
+
+```bash
+entire enable            # installs git hooks + agent hooks (e.g. --agent claude-code)
+git add .entire && git commit -m "Enable Entire"
+```
+
+Checkpoints (agent transcripts + touched files) are stored on the `entire/checkpoints/v1` branch — push it too:
+
+```bash
+git push origin entire/checkpoints/v1
+```
