@@ -31,6 +31,24 @@ The chat endpoint (`POST /api/chat`) uses Gemini when `GEMINI_API_KEY` is set in
 (get one at https://aistudio.google.com/apikey); otherwise it runs a scripted demo flow.
 Change the model with `GEMINI_MODEL`. Prompt lives in `backend/app/services/gemini.py`.
 
+## Deploy (GitHub Actions -> Google Cloud Run)
+
+Every push to `main` runs tests, builds one Docker image (React build served by FastAPI) and deploys it
+to Cloud Run. GitHub authenticates to Google Cloud via Workload Identity Federation (no JSON keys);
+the Gemini key lives in Secret Manager.
+
+One-time setup (needs a GCP project with billing and `gcloud auth login` as Owner):
+
+```bash
+./scripts/gcp-setup.sh <PROJECT_ID>            # region defaults to europe-north1
+```
+
+Then add the variables it prints under GitHub -> Settings -> Secrets and variables -> Actions -> **Variables**,
+and push to `main` (or run the workflow manually from the Actions tab). The service URL is printed in
+the deploy job log and in the Cloud Run console.
+
+Local container check: `docker build -t pocket-fitter . && docker run -p 8080:8080 -e GEMINI_API_KEY=... pocket-fitter`
+
 ## Entire
 
 Install the CLI (see https://docs.entire.io/platforms/cli), then in the repo root:
