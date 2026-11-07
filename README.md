@@ -31,6 +31,23 @@ The chat endpoint (`POST /api/chat`) uses Gemini when `GEMINI_API_KEY` is set in
 (get one at https://aistudio.google.com/apikey); otherwise it runs a scripted demo flow.
 Change the model with `GEMINI_MODEL`. Prompt lives in `backend/app/services/gemini.py`.
 
+## How a fitting works
+
+1. **Interview** (`app/services/gemini.py`): Gemini runs Takomo's fitting questionnaire one question
+   at a time and, once it has enough, returns a structured `PlayerProfile` (score, 7-iron speed or
+   carry, priorities, flight, tempo, height, wrist-to-floor, glove...).
+2. **Golfers like you** (`app/services/similar.py`): the profile is matched against Takomo's 20,000
+   train golfers (Atlas Vector Search, or in memory without Atlas); what fitted the 50 nearest is
+   handed to every engine.
+3. **Decision** (`app/decision/`): a pluggable engine picks head, shaft, grip, length and lie from
+   Takomo's catalog (`app/data/takomo_products.json`) and returns a `Recommendation`.
+   - `rules`: deterministic pick from the similar golfers, also the safety net if another engine fails
+   - `gemini`: LLM picks from the catalog (spec validated as buildable), with the rules pick as a baseline
+   - `jeff`: placeholder in `app/decision/jeff.py` for the Jeff decision model
+   Choose with `DECISION_ENGINE=auto|rules|gemini|jeff` (`auto` = gemini if a key is set, else rules).
+4. The UI renders the recommendation and a "Golfers like you" card. `POST /api/decide` runs an engine
+   on a profile directly.
+
 ## MongoDB (optional)
 
 Set `MONGODB_URI` (e.g. a MongoDB Atlas connection string) in `backend/.env`. Without it the app
@@ -40,13 +57,13 @@ reads the catalog from the bundled JSON and does not save fittings.
   options, fitting rules), loaded from `backend/app/data/takomo_products.json` by
   `cd backend && uv run python -m app.seed` (idempotent; re-run after updating the JSON).
   Served at `GET /api/products` and injected into the Gemini prompt.
-- `fittings`: one document per chat session (messages, step, final recommendation). `POST /api/chat`
+- `fittings`: one document per chat session (messages, step, profile, recommendation). `POST /api/chat`
   returns a `fitting_id`; `GET /api/fittings/{id}` reads it back.
 
 - `golfers`: Takomo's 20,000 train golfers as vectors (questionnaire answers) plus their reference
   fit, with an Atlas Vector Search index `golfer_vector` (created by the seed script).
-  `POST /api/similar` (a `GolferProfile`) returns what fitted the 50 most similar golfers; the chat
-  uses it for the final recommendation and shows a "Golfers like you" card. Without Atlas the same
+  `POST /api/similar` (a `PlayerProfile`) returns what fitted the 50 most similar golfers; the
+  decision engines use it and the chat shows a "Golfers like you" card. Without Atlas the same
   search runs in memory over `backend/app/data/golfers_train.jsonl.gz`.
 
 Golfer vectors are built by `scripts/build_golfers.py` (re-run it after changing

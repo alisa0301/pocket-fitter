@@ -38,7 +38,7 @@ def test_fitting_is_saved_and_continued(mongo):
     assert fid
 
     msgs += [{"role": "assistant", "content": first["reply"]}]
-    for text in ["10-18", "140-160 m", "Slice / right"]:
+    for text in ["Over 92", "Under 120 yd", "Forgiveness", "High"]:
         msgs.append({"role": "user", "content": text})
         out = client.post("/api/chat", json={"messages": msgs, "fitting_id": fid}).json()
         assert out["fitting_id"] == fid
@@ -49,7 +49,8 @@ def test_fitting_is_saved_and_continued(mongo):
     assert saved["id"] == fid
     assert saved["messages"] == msgs
     assert saved["step"] == saved["total_steps"]
-    assert "iron" in saved["recommendation"]
+    assert saved["recommendation"]["iron_set"]["id"] == "101-mkii"
+    assert saved["profile"]["score_bucket"] == 5
 
 
 def test_unknown_fitting_is_404(mongo):

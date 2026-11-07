@@ -11,6 +11,7 @@ from app.services import catalog
 def scripted_mode(monkeypatch):
     """Tests never hit Gemini or a real MongoDB: scripted replies, no Mongo unless `mongo` is used."""
     monkeypatch.setattr(settings, "gemini_api_key", "")
+    monkeypatch.setattr(settings, "decision_engine", "auto")
     monkeypatch.setattr(settings, "mongodb_uri", "")
     catalog.clear_cache()
     yield

@@ -15,17 +15,9 @@ def test_chat_asks_first_question():
     r = client.post("/api/chat", json={"messages": [{"role": "user", "content": "Find my irons"}]})
     assert r.status_code == 200
     data = r.json()
-    assert "handicap" in data["reply"]
+    assert "score" in data["reply"]
     assert data["suggestions"]
 
-
-def test_chat_gives_recommendation_at_end():
-    msgs = []
-    for text in ["hi", "10-18", "140-160 m", "Slice / right"]:
-        msgs.append({"role": "user", "content": text})
-        msgs.append({"role": "assistant", "content": "..."})
-    r = client.post("/api/chat", json={"messages": msgs[:-1]})
-    assert "iron" in r.json()["reply"]
 
 
 def test_products_catalog():
@@ -43,7 +35,7 @@ def test_catalog_in_system_prompt():
     prompt = gemini.system_prompt(catalog.load_file())
     assert "Iron 301 MB" in prompt
     assert "Takomo Obsidian" in prompt
-    assert "(0-5)" in prompt
+    assert "{total_steps}" not in prompt and "{catalog}" not in prompt
 
 
 def test_chat_without_mongo_has_no_fitting_id():

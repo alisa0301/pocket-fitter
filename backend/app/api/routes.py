@@ -5,7 +5,8 @@ from google.genai import errors as genai_errors
 
 from app.core.config import settings
 from app.db import get_db
-from app.schemas import ChatIn, ChatOut, GolferProfile, SimilarGolfers
+from app.decision import engine
+from app.schemas import ChatIn, ChatOut, PlayerProfile, Recommendation, SimilarGolfers
 from app.services import catalog, fittings, gemini, scripted, similar
 
 router = APIRouter()
@@ -17,8 +18,39 @@ def health() -> dict[str, str]:
     return {
         "status": "ok",
         "llm": "gemini" if settings.gemini_api_key else "scripted",
+        "decision_engine": engine.engine_name(),
         "db": "mongodb" if get_db() is not None else "none",
     }
+
+
+@router.post("/chat", response_model=ChatOut)
+async def chat(body: ChatIn) -> ChatOut:
+    try:
+        out = await gemini.reply(body.messages) if settings.gemini_api_key else scripted.reply(
+            body.messages
+        )
+    except genai_errors.APIError as exc:
+        log.exception("Gemini call failed")
+        raise HTTPException(status_code=502, detail=f"Gemini {exc.code}: {exc.message}") from exc
+    except Exception as exc:
+        log.exception("Gemini call failed")
+        raise HTTPException(status_code=502, detail=f"LLM error: {type(exc).__name__}") from exc
+    if out.profile is not None:
+        out.recommendation = await engine.decide(out.profile)
+    out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
+    return out
+
+
+@router.post("/decide", response_model=Recommendation)
+async def decide(profile: PlayerProfile) -> Recommendation:
+    """Run the decision engine directly on a profile (handy for testing / comparing engines)."""
+    return await engine.decide(profile)
+
+
+@router.post("/similar", response_model=SimilarGolfers)
+async def similar_golfers(profile: PlayerProfile, k: int = 50) -> SimilarGolfers:
+    """What fitted the k most similar golfers in Takomo's data (Atlas Vector Search)."""
+    return await similar.find(profile, k=max(5, min(k, 200)))
 
 
 @router.get("/products")
@@ -27,35 +59,9 @@ async def products() -> dict:
     return await catalog.load()
 
 
-@router.post("/similar", response_model=SimilarGolfers)
-async def similar_golfers(profile: GolferProfile, k: int = 50) -> SimilarGolfers:
-    """What fitted the k most similar golfers in Takomo's data (Atlas Vector Search)."""
-    return await similar.find(profile, k=max(5, min(k, 200)))
-
-
 @router.get("/fittings/{fitting_id}")
 async def get_fitting(fitting_id: str) -> dict:
     doc = await fittings.get(fitting_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Fitting not found")
     return doc
-
-
-@router.post("/chat", response_model=ChatOut)
-async def chat(body: ChatIn) -> ChatOut:
-    out = await _reply(body)
-    out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
-    return out
-
-
-async def _reply(body: ChatIn) -> ChatOut:
-    if not settings.gemini_api_key:
-        return scripted.reply(body.messages)
-    try:
-        return await gemini.reply(body.messages, recommended=body.recommended)
-    except genai_errors.APIError as exc:
-        log.exception("Gemini call failed")
-        raise HTTPException(status_code=502, detail=f"Gemini {exc.code}: {exc.message}") from exc
-    except Exception as exc:
-        log.exception("Gemini call failed")
-        raise HTTPException(status_code=502, detail=f"LLM error: {type(exc).__name__}") from exc

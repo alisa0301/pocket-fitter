@@ -105,3 +105,37 @@ def prompt_text(d: dict) -> str:
     lines.append("TAKOMO FITTING RULES (starting point, not a spec):")
     lines.append(json.dumps(d["current_tool_rules"], ensure_ascii=False, separators=(",", ":")))
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- lookups used by decision engines
+STOCK_GRIPS = {"standard", "midsize"}  # Takomo, 5 Nov 2026: midsize grips are stock too
+
+
+def head(slug: str, data: dict | None = None) -> dict | None:
+    return next((h for h in (data or load_file())["heads"] if h["slug"] == slug), None)
+
+
+def shaft(slug: str, data: dict | None = None) -> dict | None:
+    return next((s for s in (data or load_file())["shafts"] if s["slug"] == slug), None)
+
+
+def shaft_name(s: dict) -> str:
+    build = f" {s['build']}" if s.get("build") else ""
+    return f"{s['model']}{build} {s['flex']} {s['weight_g']}g"
+
+
+def purchase_for(head_slug: str, shaft_slug: str, length_in: float, lie_deg: int, grip: str) -> str:
+    """Stock = stock steel shaft for the head, standard length and lie, standard or midsize grip."""
+    h, s = head(head_slug), shaft(shaft_slug)
+    ok = (h is not None and s is not None and s["material"] == "steel"
+          and s["model"] in h["stock_shafts"] and length_in == 0 and lie_deg == 0
+          and grip in STOCK_GRIPS)
+    return "stock" if ok else "custom"
+
+
+def is_buildable(head_slug: str, shaft_slug: str, length_in: float, lie_deg: int, grip: str) -> bool:
+    data = load_file()
+    s = shaft(shaft_slug, data)
+    return (head(head_slug, data) is not None and s is not None and head_slug in s["heads"]
+            and length_in in data["length_options_in"] and lie_deg in data["lie_options_deg"]
+            and grip in {g["slug"] for g in data["grips"]})

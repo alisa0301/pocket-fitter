@@ -25,13 +25,10 @@ async def save(fitting_id: str | None, messages: list[Message], out: ChatOut) ->
         "total_steps": out.total_steps,
         "updated_at": now,
     }
-    if out.profile:
+    if out.profile:  # the turn that produced the recommendation
         update["profile"] = out.profile.model_dump(exclude_none=True)
-    if out.similar:  # the turn that produced the recommendation
-        update["recommendation"] = out.reply
-        update["similar"] = out.similar.model_dump()
-    elif out.total_steps and out.step >= out.total_steps and out.profile is None:
-        update["recommendation"] = out.reply  # scripted mode
+    if out.recommendation:
+        update["recommendation"] = out.recommendation.model_dump()
     try:
         await db.fittings.update_one(
             {"_id": fitting_id},

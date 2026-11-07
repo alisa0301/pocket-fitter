@@ -19,7 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.db import get_db
-from app.schemas import GolferProfile, SimilarGolfers, SpecShare
+from app.schemas import PlayerProfile, SimilarGolfers, SpecShare
 from app.services import catalog
 
 log = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ SCALES = {
 DIM = 9 + len(CHARACTERISTICS)
 
 
-def estimate_speed(p: GolferProfile) -> float:
+def estimate_speed(p: PlayerProfile) -> float:
     if p.speed_mph:
         a, b = SPEED_FROM_REPORTED
         return a * p.speed_mph + b
@@ -66,7 +66,7 @@ def estimate_speed(p: GolferProfile) -> float:
     return DEFAULT_SPEED_MPH
 
 
-def embed(p: GolferProfile) -> list[float]:
+def embed(p: PlayerProfile) -> list[float]:
     s = SCALES
     female = 1.0 if p.sex == "female" else 0.0
     # Missing body measurements fall back to population means for the golfer's sex.
@@ -136,11 +136,9 @@ def _shares(values: list, top: int = 3, label=None) -> list[SpecShare]:
 @lru_cache(maxsize=1)
 def _labels() -> dict[str, str]:
     data = catalog.load_file()
-    out = {h["slug"]: h["name"] for h in data["heads"]}
-    for s in data["shafts"]:
-        build = f" {s['build']}" if s.get("build") else ""
-        out[s["slug"]] = f"{s['model']}{build} {s['flex']} {s['weight_g']}g"
-    return out
+    return {h["slug"]: h["name"] for h in data["heads"]} | {
+        s["slug"]: catalog.shaft_name(s) for s in data["shafts"]
+    }
 
 
 def summarise(neighbours: list[dict], source: str) -> SimilarGolfers:
@@ -164,7 +162,12 @@ def summarise(neighbours: list[dict], source: str) -> SimilarGolfers:
     )
 
 
-async def find(profile: GolferProfile, k: int = 50) -> SimilarGolfers:
+def find_local(profile: PlayerProfile, k: int = 50) -> SimilarGolfers:
+    return summarise(_search_memory(embed(profile), k), "in_memory")
+
+
+async def find(profile: PlayerProfile, k: int = 50) -> SimilarGolfers:
+    """Atlas Vector Search when available, otherwise the same search in memory."""
     vec = embed(profile)
     docs = await _search_mongo(vec, k)
     if docs is not None:

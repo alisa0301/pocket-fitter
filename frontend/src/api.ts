@@ -21,13 +21,33 @@ export interface SimilarGolfers {
   purchase: SpecShare[];
   expected_carry_yd: number | null;
 }
+export interface Option {
+  id: string;
+  name: string;
+  description: string;
+}
+export interface Recommendation {
+  iron_set: Option;
+  shaft: Option;
+  runner_up: Option | null;
+  grip: string;
+  length_in: number;
+  lie_deg: number;
+  purchase: "stock" | "custom";
+  set_makeup: string;
+  adjustments: string[];
+  reasons: string[];
+  confidence: number;
+  engine: string;
+  similar: SimilarGolfers | null;
+}
 export interface ChatResponse {
+  recommendation: Recommendation | null;
   reply: string;
   suggestions: string[];
   step: number;
   total_steps: number;
   fitting_id: string | null;
-  similar: SimilarGolfers | null;
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -42,8 +62,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const sendChat = (messages: Message[], fittingId: string | null, recommended: boolean) =>
+export const sendChat = (messages: Message[], fittingId: string | null) =>
   api<ChatResponse>("/chat", {
     method: "POST",
-    body: JSON.stringify({ messages, fitting_id: fittingId, recommended }),
+    body: JSON.stringify({ messages, fitting_id: fittingId }),
   });

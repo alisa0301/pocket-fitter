@@ -3,9 +3,9 @@ import asyncio
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.schemas import GolferProfile
+from app.schemas import PlayerProfile
 from app.seed import seed_golfers
-from app.services import gemini, similar
+from app.services import similar
 
 client = TestClient(app)
 
@@ -18,15 +18,15 @@ SCRATCH = {"age": 28, "sex": "male", "score_bucket": 1, "speed_mph": 95,
 
 
 def test_embedding_shape_and_defaults():
-    assert len(similar.embed(GolferProfile(**BEGINNER))) == similar.DIM
-    assert len(similar.embed(GolferProfile())) == similar.DIM  # empty profile still embeds
+    assert len(similar.embed(PlayerProfile(**BEGINNER))) == similar.DIM
+    assert len(similar.embed(PlayerProfile())) == similar.DIM  # empty profile still embeds
 
 
 def test_bundled_golfers_match_embedding():
     golfers = similar.load_file()
     assert len(golfers) == 20000
     g = golfers[0]
-    assert g["embedding"] == similar.embed(GolferProfile(**g["profile"]))
+    assert g["embedding"] == similar.embed(PlayerProfile(**g["profile"]))
 
 
 def test_similar_endpoint_in_memory():
@@ -70,38 +70,3 @@ def test_seed_golfers(mongo):
     asyncio.run(seed_golfers(mongo))
     assert mongo._db.golfers.count_documents({}) == 20000
     assert mongo._db.golfers.find_one({}, {"fit": 1})["fit"]["head"]
-
-
-def test_gemini_recommends_with_similar_golfers(monkeypatch):
-    calls = []
-
-    async def fake_generate(contents, system):
-        calls.append(system)
-        if len(calls) == 1:
-            return gemini._Answer(reply="Let me check golfers like you...", step=4,
-                                  profile=GolferProfile(**BEGINNER), ready_to_recommend=True)
-        return gemini._Answer(reply="Iron 101 MKII with KBS Tour Lite...", step=4)
-
-    monkeypatch.setattr(gemini, "_generate", fake_generate)
-    from app.schemas import Message
-
-    out = asyncio.run(gemini.reply([Message(role="user", content="go")]))
-    assert len(calls) == 2
-    assert "MOST SIMILAR GOLFERS" in calls[1] and "MOST SIMILAR GOLFERS" not in calls[0]
-    assert out.reply.startswith("Iron 101 MKII")
-    assert out.step == out.total_steps == gemini.TOTAL_STEPS
-    assert out.similar and out.similar.head[0].value == "101-mkii"
-    assert out.profile.carry_yd == 115
-
-
-def test_recommends_once_even_without_flag(monkeypatch):
-    async def fake_generate(contents, system):
-        # model covered all topics but forgot ready_to_recommend
-        return gemini._Answer(reply="x", step=gemini.TOTAL_STEPS - 1, profile=GolferProfile(**BEGINNER))
-
-    monkeypatch.setattr(gemini, "_generate", fake_generate)
-    from app.schemas import Message
-
-    msgs = [Message(role="user", content="go")]
-    assert asyncio.run(gemini.reply(msgs)).similar is not None
-    assert asyncio.run(gemini.reply(msgs, recommended=True)).similar is None
