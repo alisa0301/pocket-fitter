@@ -26,3 +26,19 @@ def test_chat_gives_recommendation_at_end():
         msgs.append({"role": "assistant", "content": "..."})
     r = client.post("/api/chat", json={"messages": msgs[:-1]})
     assert "iron" in r.json()["reply"]
+
+
+def test_products_catalog():
+    r = client.get("/api/products")
+    assert r.status_code == 200
+    data = r.json()
+    assert [h["slug"] for h in data["heads"]] == ["101-mkii", "201-mkii", "201t-mkii", "301-cb", "301-mb"]
+    assert len(data["shafts"]) == 35
+    assert len(data["grips"]) == 3
+
+
+def test_catalog_in_system_prompt():
+    from app.services import gemini
+
+    assert "Iron 301 MB" in gemini.SYSTEM_PROMPT
+    assert "Takomo Obsidian" in gemini.SYSTEM_PROMPT

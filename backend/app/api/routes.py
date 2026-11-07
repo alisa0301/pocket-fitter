@@ -5,7 +5,7 @@ from google.genai import errors as genai_errors
 
 from app.core.config import settings
 from app.schemas import ChatIn, ChatOut
-from app.services import gemini, scripted
+from app.services import catalog, gemini, scripted
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -14,6 +14,12 @@ log = logging.getLogger(__name__)
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "llm": "gemini" if settings.gemini_api_key else "scripted"}
+
+
+@router.get("/products")
+def products() -> dict:
+    """Takomo iron catalog: heads, shafts, grips, length/lie options and fitting rules."""
+    return catalog.load()
 
 
 @router.post("/chat", response_model=ChatOut)
