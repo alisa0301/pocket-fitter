@@ -20,3 +20,5 @@ google-cloud-sdk/
 __MACOSX/
 ._*
 *.zip
+*.tar.gz
+*.tgz

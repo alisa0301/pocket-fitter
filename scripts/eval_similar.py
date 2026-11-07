@@ -1,7 +1,7 @@
 """Score "golfers like you" fits on Takomo's dev split with Takomo's own scorer.
 
     cd backend && uv run --with pandas --with numpy python ../scripts/eval_similar.py \
-        "../takomo/TAKOMO_FITTING_LAB_2026 (1) (1)/TAKOMO_FITTING_LAB_2026" [k]
+        ../takomo/fitting_lab [k]
 
 Prints the Spec Agreement Score (0-100) of today's rules (Takomo baseline B1, questionnaire only)
 and of the nearest-neighbour fit, both from the same questionnaire answers.
