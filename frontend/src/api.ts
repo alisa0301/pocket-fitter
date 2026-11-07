@@ -6,6 +6,8 @@ export interface Message {
 export interface ChatResponse {
   reply: string;
   suggestions: string[];
+  step: number;
+  total_steps: number;
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {

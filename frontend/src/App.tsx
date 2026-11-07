@@ -1,23 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { sendChat, type Message } from "./api";
 
-const STARTERS = [
-  { title: "Find my irons", text: "Answer a few questions and get an iron recommendation." },
-  { title: "Wedge gapping", text: "Build lofts that cover every distance inside 100 m." },
-  { title: "Driver fit", text: "Dial in loft and shaft for more carry." },
-];
+const GREETING: Message = {
+  role: "assistant",
+  content: "Hi, I'm your Pocket Fitter. I'll help you find clubs that fit your game. What brings you here?",
+};
+const START_OPTIONS = ["I'm looking for new gear", "Just researching", "Comparing brands", "I'm new to golf"];
 
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [suggestions, setSuggestions] = useState<string[]>(START_OPTIONS);
+  const [step, setStep] = useState({ current: 0, total: 4 });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, loading, suggestions]);
+
+  function reset() {
+    setMessages([GREETING]);
+    setSuggestions(START_OPTIONS);
+    setStep({ current: 0, total: 4 });
+    setInput("");
+    setError("");
+  }
 
   async function send(text: string) {
     const content = text.trim();
@@ -30,9 +39,11 @@ export default function App() {
     setError("");
     setLoading(true);
     try {
-      const res = await sendChat(next);
+      // Greeting is UI-only; the backend sees the real conversation.
+      const res = await sendChat(next.slice(1));
       setMessages([...next, { role: "assistant", content: res.reply }]);
       setSuggestions(res.suggestions);
+      setStep({ current: res.step, total: res.total_steps || 4 });
     } catch {
       setError("Couldn't reach the fitter. Is the backend running?");
     } finally {
@@ -40,82 +51,69 @@ export default function App() {
     }
   }
 
-  function reset() {
-    setMessages([]);
-    setSuggestions([]);
-    setInput("");
-    setError("");
-  }
-
-  const empty = messages.length === 0;
+  const done = step.current >= step.total;
+  const progress = Math.max(4, (step.current / step.total) * 100);
+  const stepLabel = String(Math.min(step.current + 1, step.total)).padStart(2, "0");
 
   return (
-    <div className="app">
+    <div className="page">
       <header className="topbar">
         <button className="brand" onClick={reset}>Pocket Fitter</button>
-        <span className="tag">Virtual club fitting</span>
+        <span className="nav">Virtual club fitting</span>
       </header>
 
-      <main className="thread">
-        {empty ? (
-          <section className="hero">
-            <p className="eyebrow">Your personal fitter</p>
-            <h1>Clubs that fit your game.</h1>
-            <p className="lead">
-              Tell us how you play. We'll guide you to the right setup in a couple of minutes.
-            </p>
-            <div className="starters">
-              {STARTERS.map((s) => (
-                <button key={s.title} className="card" onClick={() => send(s.title)}>
-                  <span className="card-title">{s.title}</span>
-                  <span className="card-text">{s.text}</span>
-                  <span className="arrow" aria-hidden>→</span>
-                </button>
+      <section className="panel" aria-label="Fitting assistant">
+        <div className="panel-head">
+          <p className="crumb">
+            <span className="accent">Fitting assistant</span> / {done ? "Your fit" : `Step ${stepLabel}`}
+          </p>
+          <button className="icon-btn" onClick={reset} aria-label="Start over" title="Start over">✕</button>
+        </div>
+        <div className="progress">
+          <div className="bar"><span style={{ width: `${progress}%` }} /></div>
+          <span className={`check ${done ? "on" : ""}`} aria-hidden>✓</span>
+        </div>
+
+        <div className="messages">
+          {messages.map((m, i) => (
+            <div key={i} className={`msg ${m.role}`}>
+              <p className="bubble">{m.content}</p>
+            </div>
+          ))}
+          {loading && (
+            <div className="msg assistant">
+              <p className="bubble typing"><span /><span /><span /></p>
+            </div>
+          )}
+          {error && <p className="error">{error}</p>}
+          {suggestions.length > 0 && !loading && (
+            <div className="options">
+              {suggestions.map((s) => (
+                <button key={s} className="option" onClick={() => send(s)}>{s}</button>
               ))}
             </div>
-          </section>
-        ) : (
-          <div className="messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`msg ${m.role}`}>
-                {m.role === "assistant" && <span className="avatar" aria-hidden>PF</span>}
-                <p className="bubble">{m.content}</p>
-              </div>
-            ))}
-            {loading && (
-              <div className="msg assistant">
-                <span className="avatar" aria-hidden>PF</span>
-                <p className="bubble typing"><span /><span /><span /></p>
-              </div>
-            )}
-            {error && <p className="error">{error}</p>}
-            {suggestions.length > 0 && !loading && (
-              <div className="chips">
-                {suggestions.map((s) => (
-                  <button key={s} className="chip" onClick={() => send(s)}>{s}</button>
-                ))}
-              </div>
-            )}
-            <div ref={endRef} />
-          </div>
-        )}
-      </main>
+          )}
+          <div ref={endRef} />
+        </div>
 
-      <form
-        className="composer"
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(input);
-        }}
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about irons, wedges, shafts…"
-          aria-label="Message"
-        />
-        <button type="submit" disabled={!input.trim() || loading}>Send</button>
-      </form>
+        <form
+          className="composer"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+        >
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your answer or ask a question…"
+            aria-label="Message"
+          />
+          <button type="submit" className="send" disabled={!input.trim() || loading}>
+            Send <span aria-hidden>→</span>
+          </button>
+        </form>
+      </section>
     </div>
   );
 }
