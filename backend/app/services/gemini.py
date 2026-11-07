@@ -5,7 +5,7 @@ from google.genai import errors, types
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
-from app.schemas import ChatOut, Message
+from app.schemas import ChatOut, Message, PlayerProfile
 
 log = logging.getLogger(__name__)
 
@@ -13,23 +13,25 @@ TOTAL_STEPS = 5
 
 SYSTEM_PROMPT = f"""\
 You are Pocket Fitter, a friendly virtual golf club fitter.
-Goal: recommend a club setup (irons, wedges, driver, shafts) that fits the golfer.
+Your job in this chat is to INTERVIEW the golfer. A separate decision engine picks the final clubs.
 
 The app has already greeted the golfer with: "Hi, I'm your Pocket Fitter. I'll help you find clubs
 that fit your game. What brings you here?" Their first message answers that.
 
 How to run the conversation:
 - Ask ONE short question at a time, like a fitting tool would. Keep replies under 40 words.
-- Cover roughly {TOTAL_STEPS - 1} topics before recommending: what they're looking for, handicap or
-  experience, 7-iron carry distance or swing speed, typical miss / ball flight, and age or physical
-  limits when relevant. Skip anything the golfer already told you.
-- After that, give a clear recommendation: club type (e.g. players' cavity back, game improvement),
-  shaft flex and weight, loft / lie notes, and one sentence on why.
-- If the golfer asks a general question, answer it briefly, then continue the fitting.
+- Collect: what they're looking for, handicap (or experience level), 7-iron carry distance in metres
+  (convert yards if needed), typical miss (slice / hook / thin or fat / straight) and age.
+  Skip anything the golfer already told you; accept rough answers and ranges (use the midpoint).
+- If the golfer asks a general question, answer it briefly, then continue.
 - Always offer 2-4 short tappable answer options in `suggestions` (max 4 words each).
-  After the recommendation, offer follow-ups such as "Compare options", "Shaft options", "Start over".
-- `step` is how many fitting topics are covered so far (0-{TOTAL_STEPS}); set it to {TOTAL_STEPS}
-  once you've given the recommendation.
+- `step` = how many of those {TOTAL_STEPS} topics are covered so far.
+- Once you have enough (at least handicap or experience, 7-iron carry, and miss), set `ready` to true,
+  fill `profile`, set `step` to {TOTAL_STEPS}, and reply with ONE short line such as
+  "Thanks! Here's the setup I'd pick for you." Do NOT name clubs yourself; the engine does that.
+  Suggestions then: "Why this set?", "Other shaft options", "Start over".
+- After the recommendation the golfer may ask follow-ups; answer briefly using the recommendation
+  shown in the conversation. Keep `ready` false for those turns.
 - Always reply in English, including `suggestions`, even if the golfer writes in another language.
 """
 
@@ -38,6 +40,8 @@ class _Answer(BaseModel):
     reply: str
     suggestions: list[str] = Field(default_factory=list)
     step: int
+    ready: bool = False
+    profile: PlayerProfile | None = None
 
 
 _client: genai.Client | None = None
@@ -50,23 +54,19 @@ def _get_client() -> genai.Client:
     return _client
 
 
-async def reply(messages: list[Message]) -> ChatOut:
-    contents = [
-        types.Content(role="user" if m.role == "user" else "model", parts=[types.Part(text=m.content)])
-        for m in messages
-    ]
+async def generate_json(contents, system: str, schema: type[BaseModel], temperature: float = 0.6):
+    """Call Gemini with structured output; fall back to the secondary model on 404/429/5xx."""
     config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=system,
         response_mime_type="application/json",
-        response_schema=_Answer,
-        temperature=0.6,
+        response_schema=schema,
+        temperature=temperature,
     )
     try:
         resp = await _get_client().aio.models.generate_content(
             model=settings.gemini_model, contents=contents, config=config
         )
     except errors.APIError as exc:
-        # Primary model overloaded (503), rate-limited (429) or retired (404) -> try the fallback.
         if exc.code not in (404, 429, 500, 502, 503) or not settings.gemini_fallback_model:
             raise
         log.warning("Gemini %s failed (%s), falling back to %s",
@@ -74,10 +74,20 @@ async def reply(messages: list[Message]) -> ChatOut:
         resp = await _get_client().aio.models.generate_content(
             model=settings.gemini_fallback_model, contents=contents, config=config
         )
-    answer = resp.parsed if isinstance(resp.parsed, _Answer) else _Answer.model_validate_json(resp.text)
+    return resp.parsed if isinstance(resp.parsed, schema) else schema.model_validate_json(resp.text)
+
+
+async def reply(messages: list[Message]) -> ChatOut:
+    contents = [
+        types.Content(role="user" if m.role == "user" else "model", parts=[types.Part(text=m.content)])
+        for m in messages
+    ]
+    answer: _Answer = await generate_json(contents, SYSTEM_PROMPT, _Answer)
+    ready = answer.ready and answer.profile is not None
     return ChatOut(
         reply=answer.reply,
         suggestions=answer.suggestions[:4],
-        step=max(0, min(answer.step, TOTAL_STEPS)),
+        step=TOTAL_STEPS if ready else max(0, min(answer.step, TOTAL_STEPS - 1)),
         total_steps=TOTAL_STEPS,
+        profile=answer.profile if ready else None,
     )

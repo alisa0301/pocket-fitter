@@ -31,6 +31,18 @@ The chat endpoint (`POST /api/chat`) uses Gemini when `GEMINI_API_KEY` is set in
 (get one at https://aistudio.google.com/apikey); otherwise it runs a scripted demo flow.
 Change the model with `GEMINI_MODEL`. Prompt lives in `backend/app/services/gemini.py`.
 
+## How a fitting works
+
+1. **Interview** (`app/services/gemini.py`): Gemini asks one question at a time and, once it has
+   enough, returns a structured `PlayerProfile` (handicap, 7-iron carry, miss, age...).
+2. **Decision** (`app/decision/`): a pluggable engine picks the final iron set, shaft, set makeup and
+   adjustments from the catalog (`app/catalog.py`, **demo data** for now) and returns a `Recommendation`.
+   - `rules`: deterministic baseline, also the safety net if another engine fails
+   - `gemini`: LLM picks from the catalog (ids are validated), using the rules pick as a baseline
+   - `jeff`: placeholder in `app/decision/jeff.py` for the Jeff decision model
+   Choose with `DECISION_ENGINE=auto|rules|gemini|jeff` (`auto` = gemini if a key is set, else rules).
+3. The UI renders the recommendation as a card. `POST /api/decide` runs an engine on a profile directly.
+
 ## Deploy (GitHub Actions -> Google Cloud Run)
 
 Every push to `main` runs tests, builds one Docker image (React build served by FastAPI) and deploys it
