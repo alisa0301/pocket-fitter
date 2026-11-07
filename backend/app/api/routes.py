@@ -33,10 +33,9 @@ def health() -> dict[str, str]:
 
 @router.post("/chat", response_model=ChatOut)
 async def chat(body: ChatIn) -> ChatOut:
+    use_llm = bool(settings.gemini_api_key) and not body.demo
     try:
-        out = await gemini.reply(body.messages) if settings.gemini_api_key else scripted.reply(
-            body.messages
-        )
+        out = await gemini.reply(body.messages) if use_llm else scripted.reply(body.messages)
     except genai_errors.APIError as exc:
         log.exception("Gemini call failed")
         raise HTTPException(status_code=502, detail=f"Gemini {exc.code}: {exc.message}") from exc
@@ -44,9 +43,10 @@ async def chat(body: ChatIn) -> ChatOut:
         log.exception("Gemini call failed")
         raise HTTPException(status_code=502, detail=f"LLM error: {type(exc).__name__}") from exc
     if out.profile is not None:
-        out.recommendation = await engine.decide(out.profile)
+        out.recommendation = await engine.decide(out.profile, "rules" if body.demo else None)
         out.recommendation.comparison = compare.compare(out.profile, out.recommendation.iron_set.id)
-    out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
+    if not body.demo:  # demo runs are not stored with real fittings
+        out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
     return out
 
 

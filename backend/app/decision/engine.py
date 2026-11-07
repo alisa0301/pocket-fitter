@@ -15,10 +15,10 @@ def engine_name() -> str:
     return name
 
 
-async def decide(profile: PlayerProfile) -> Recommendation:
+async def decide(profile: PlayerProfile, name: str | None = None) -> Recommendation:
     """Pick the final clubs. Any engine failure falls back to the rule-based baseline."""
     found = await similar.find(profile)  # Atlas Vector Search, shared by every engine
-    name = engine_name()
+    name = name or engine_name()
     if name == "rules":
         return rules.decide(profile, found)
     try:

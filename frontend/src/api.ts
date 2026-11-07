@@ -89,8 +89,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const sendChat = (messages: Message[], fittingId: string | null) =>
+export const sendChat = (messages: Message[], fittingId: string | null, demo = false) =>
   api<ChatResponse>("/chat", {
     method: "POST",
-    body: JSON.stringify({ messages, fitting_id: fittingId }),
+    body: JSON.stringify({ messages, fitting_id: fittingId, demo }),
   });

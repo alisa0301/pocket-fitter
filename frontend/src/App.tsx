@@ -21,11 +21,22 @@ export default function App() {
   const [error, setError] = useState("");
   // Id of this fitting in MongoDB (null when the backend runs without a database).
   const [fittingId, setFittingId] = useState<string | null>(null);
+  const [demo, setDemo] = useState(() => new URLSearchParams(location.search).has("demo"));
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading, suggestions]);
+
+  function switchMode(nextDemo: boolean) {
+    if (nextDemo === demo) return;
+    setDemo(nextDemo);
+    const url = new URL(location.href);
+    if (nextDemo) url.searchParams.set("demo", "");
+    else url.searchParams.delete("demo");
+    history.replaceState(null, "", url);
+    reset();
+  }
 
   function reset() {
     setMessages([GREETING]);
@@ -48,7 +59,7 @@ export default function App() {
     setLoading(true);
     try {
       // Greeting is UI-only; the backend sees the real conversation (recommendations as text).
-      const res = await sendChat(next.slice(1).map(toBackendMessage), fittingId);
+      const res = await sendChat(next.slice(1).map(toBackendMessage), fittingId, demo);
       setMessages([
         ...next,
         { role: "assistant", content: res.reply, recommendation: res.recommendation ?? undefined },
@@ -71,8 +82,17 @@ export default function App() {
     <div className="page">
       <header className="topbar">
         <button className="brand" onClick={reset}>Pocket Fitter</button>
-        <span className="nav">Virtual club fitting</span>
+        <nav className="tabs" aria-label="Mode">
+          <button className={!demo ? "tab on" : "tab"} onClick={() => switchMode(false)}>Live</button>
+          <button className={demo ? "tab on" : "tab"} onClick={() => switchMode(true)}>Demo</button>
+        </nav>
       </header>
+      {demo && (
+        <p className="demo-banner">
+          Demo mode: scripted questions and rule-based picks on Takomo&apos;s data. No AI calls,
+          nothing is saved.
+        </p>
+      )}
 
       <section className="panel" aria-label="Fitting assistant">
         <div className="panel-head">
