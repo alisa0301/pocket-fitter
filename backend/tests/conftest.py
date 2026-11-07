@@ -1,5 +1,6 @@
 import mongomock
 import pytest
+from pymongo.errors import OperationFailure
 
 from app import db as db_module
 from app.core.config import settings
@@ -33,6 +34,13 @@ class _AsyncCollection:
     def find(self, *args, **kwargs):
         return _Cursor(self._coll.find(*args, **kwargs))
 
+    async def aggregate(self, pipeline):
+        return _Cursor(self._coll.aggregate(pipeline))
+
+    async def list_search_indexes(self, *args, **kwargs):
+        # what a plain (non-Atlas) mongod answers
+        raise OperationFailure("$listSearchIndexes stage is only allowed on MongoDB Atlas")
+
     def __getattr__(self, name):
         method = getattr(self._coll, name)
 
@@ -55,7 +63,7 @@ class _AsyncDatabase:
 def mongo(monkeypatch):
     database = _AsyncDatabase(mongomock.MongoClient()["pocket_fitter_test"])
     for module in ("app.db", "app.services.catalog", "app.services.fittings", "app.api.routes",
-                   "app.seed"):
+                   "app.seed", "app.services.similar"):
         monkeypatch.setattr(f"{module}.get_db", lambda: database)
     return database
 

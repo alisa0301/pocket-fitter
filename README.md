@@ -43,6 +43,17 @@ reads the catalog from the bundled JSON and does not save fittings.
 - `fittings`: one document per chat session (messages, step, final recommendation). `POST /api/chat`
   returns a `fitting_id`; `GET /api/fittings/{id}` reads it back.
 
+- `golfers`: Takomo's 20,000 train golfers as vectors (questionnaire answers) plus their reference
+  fit, with an Atlas Vector Search index `golfer_vector` (created by the seed script).
+  `POST /api/similar` (a `GolferProfile`) returns what fitted the 50 most similar golfers; the chat
+  uses it for the final recommendation and shows a "Golfers like you" card. Without Atlas the same
+  search runs in memory over `backend/app/data/golfers_train.jsonl.gz`.
+
+Golfer vectors are built by `scripts/build_golfers.py` (re-run it after changing
+`app/services/similar.py`, then re-seed). `scripts/eval_similar.py` scores the approach on Takomo's
+dev split with Takomo's scorer: Spec Agreement Score 80.2 vs 77.1 for today's rules (questionnaire
+only, k=50; weights tuned on dev).
+
 For Cloud Run, store the URI in Secret Manager as `mongodb-uri` and add
 `MONGODB_URI=mongodb-uri:latest` to `secrets:` in `.github/workflows/deploy.yml`.
 

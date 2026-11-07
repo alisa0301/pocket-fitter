@@ -5,8 +5,8 @@ from google.genai import errors as genai_errors
 
 from app.core.config import settings
 from app.db import get_db
-from app.schemas import ChatIn, ChatOut
-from app.services import catalog, fittings, gemini, scripted
+from app.schemas import ChatIn, ChatOut, GolferProfile, SimilarGolfers
+from app.services import catalog, fittings, gemini, scripted, similar
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -25,6 +25,12 @@ def health() -> dict[str, str]:
 async def products() -> dict:
     """Takomo iron catalog: heads, shafts, grips, length/lie options and fitting rules."""
     return await catalog.load()
+
+
+@router.post("/similar", response_model=SimilarGolfers)
+async def similar_golfers(profile: GolferProfile, k: int = 50) -> SimilarGolfers:
+    """What fitted the k most similar golfers in Takomo's data (Atlas Vector Search)."""
+    return await similar.find(profile, k=max(5, min(k, 200)))
 
 
 @router.get("/fittings/{fitting_id}")
@@ -46,7 +52,7 @@ async def _reply(body: ChatIn) -> ChatOut:
     if not settings.gemini_api_key:
         return scripted.reply(body.messages)
     try:
-        return await gemini.reply(body.messages)
+        return await gemini.reply(body.messages, recommended=body.recommended)
     except genai_errors.APIError as exc:
         log.exception("Gemini call failed")
         raise HTTPException(status_code=502, detail=f"Gemini {exc.code}: {exc.message}") from exc

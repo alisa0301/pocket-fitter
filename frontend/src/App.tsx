@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { sendChat, type Message } from "./api";
+import { sendChat, type Message, type SimilarGolfers } from "./api";
+import SimilarCard from "./SimilarCard";
 
 const GREETING: Message = {
   role: "assistant",
@@ -17,6 +18,8 @@ export default function App() {
   const [error, setError] = useState("");
   // Id of this fitting in MongoDB (null when the backend runs without a database).
   const [fittingId, setFittingId] = useState<string | null>(null);
+  // "Golfers like you" stats, attached to the message index that carried the recommendation.
+  const [similar, setSimilar] = useState<{ at: number; data: SimilarGolfers } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export default function App() {
     setInput("");
     setError("");
     setFittingId(null);
+    setSimilar(null);
   }
 
   async function send(text: string) {
@@ -44,10 +48,11 @@ export default function App() {
     setLoading(true);
     try {
       // Greeting is UI-only; the backend sees the real conversation.
-      const res = await sendChat(next.slice(1), fittingId);
+      const res = await sendChat(next.slice(1), fittingId, similar !== null);
       setMessages([...next, { role: "assistant", content: res.reply }]);
       setSuggestions(res.suggestions);
       setFittingId(res.fitting_id);
+      if (res.similar) setSimilar({ at: next.length, data: res.similar });
       setStep({ current: res.step, total: res.total_steps || 4 });
     } catch (e) {
       setError(`Couldn't get an answer from the fitter. ${e instanceof Error ? e.message : ""}`);
@@ -83,6 +88,7 @@ export default function App() {
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               <p className="bubble">{m.content}</p>
+              {similar?.at === i && <SimilarCard data={similar.data} />}
             </div>
           ))}
           {loading && (
