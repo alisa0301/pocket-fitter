@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash"
-    gemini_fallback_model: str = "gemini-2.5-flash"
+    gemini_fallback_model: str = "gemini-3.8-flash"
 
     @field_validator("gemini_api_key", "gemini_model", "gemini_fallback_model")
     @classmethod
