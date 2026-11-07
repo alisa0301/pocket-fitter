@@ -2,7 +2,7 @@
 
     cd backend && uv run python ../scripts/build_golfers.py "../takomo/TAKOMO_FITTING_LAB_2026 (1) (1)/TAKOMO_FITTING_LAB_2026/data/train"
 
-One line per golfer: id, the questionnaire answers as a GolferProfile, its embedding and the
+One line per golfer: id, the questionnaire answers as a PlayerProfile, its embedding and the
 reference fit from labels.csv. Re-run after changing app.services.similar.embed().
 """
 import csv
@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from app.schemas import GolferProfile
+from app.schemas import PlayerProfile
 from app.services.similar import GOLFERS_PATH, embed
 
 HEADS = ["101-mkii", "201-mkii", "201t-mkii", "301-cb", "301-mb"]
@@ -23,8 +23,8 @@ def _f(v: str) -> float | None:
     return float(v) if v not in ("", None) else None
 
 
-def profile_from_row(r: dict) -> GolferProfile:
-    return GolferProfile(
+def profile_from_row(r: dict) -> PlayerProfile:
+    return PlayerProfile(
         age=int(r["age"]),
         sex=r["sex"],
         handedness=r["handedness"],
