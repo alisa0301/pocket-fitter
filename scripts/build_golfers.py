@@ -1,6 +1,6 @@
 """Build backend/app/data/golfers_train.jsonl.gz from Takomo's train split.
 
-    cd backend && uv run python ../scripts/build_golfers.py "../takomo/TAKOMO_FITTING_LAB_2026 (1) (1)/TAKOMO_FITTING_LAB_2026/data/train"
+    cd backend && uv run python ../scripts/build_golfers.py ../takomo/fitting_lab/data/train
 
 One line per golfer: id, the questionnaire answers as a PlayerProfile, its embedding and the
 reference fit from labels.csv. Re-run after changing app.services.similar.embed().
