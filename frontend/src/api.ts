@@ -29,6 +29,29 @@ export interface Option {
   url?: string | null;
   price_eur?: number | null;
 }
+export interface ClubSpec {
+  label: string;
+  loft_deg: number;
+  loft_source: "you" | "estimate" | "default" | "takomo";
+  forgiveness: number;
+  forgiveness_source: "estimate" | "default" | "takomo";
+}
+export interface ComparisonMetric {
+  name: string;
+  unit: string;
+  current: number;
+  takomo: number;
+  difference: number;
+  better: "takomo" | "current" | "same";
+}
+export interface ClubComparison {
+  current: ClubSpec;
+  takomo: ClubSpec;
+  swing_speed_mph: number;
+  metrics: ComparisonMetric[];
+  highlights: string[];
+  assumptions: string[];
+}
 export interface Recommendation {
   iron_set: Option;
   shaft: Option;
@@ -43,6 +66,7 @@ export interface Recommendation {
   confidence: number;
   engine: string;
   similar: SimilarGolfers | null;
+  comparison?: ClubComparison | null;
 }
 export interface ChatResponse {
   recommendation: Recommendation | null;

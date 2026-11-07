@@ -10,7 +10,7 @@ from app.services import catalog
 
 log = logging.getLogger(__name__)
 
-TOTAL_STEPS = 5
+TOTAL_STEPS = 6
 
 SYSTEM_PROMPT_TEMPLATE = """\
 You are Pocket Fitter, a friendly virtual golf club fitter for Takomo Golf irons.
@@ -29,6 +29,11 @@ How to run the conversation:
      less offset, more offset
   4. desired ball flight (low / mid / high) and swing tempo (smooth / moderate / quick)
   5. height, wrist-to-floor distance in golf shoes, glove size (XS-XL); right- or left-handed
+  6. the irons they play now (brand, model, roughly how old) and their 7-iron loft if they know it.
+     Fill `current_irons`. If they don't know the loft, put your best estimate for that model's
+     7-iron in `current_7i_loft_estimate_deg`, and rate the model's forgiveness on Takomo's 1-5 scale
+     in `current_forgiveness_estimate` (1 blade, 2 players cavity, 3 players distance, 4 game
+     improvement, 5 max forgiveness). If you don't recognise the model, leave estimates empty.
   Accept rough answers and ranges (use the midpoint); a golfer may skip a measurement they don't know.
 - If the golfer asks a general question, answer it briefly, then continue.
 - Always offer 2-4 short tappable answer options in `suggestions` (max 4 words each).

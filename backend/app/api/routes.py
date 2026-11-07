@@ -2,12 +2,20 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 from google.genai import errors as genai_errors
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.db import get_db
 from app.decision import engine
-from app.schemas import ChatIn, ChatOut, PlayerProfile, Recommendation, SimilarGolfers
-from app.services import catalog, fittings, gemini, scripted, similar
+from app.schemas import (
+    ChatIn,
+    ChatOut,
+    ClubComparison,
+    PlayerProfile,
+    Recommendation,
+    SimilarGolfers,
+)
+from app.services import catalog, compare, fittings, gemini, scripted, similar
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -37,6 +45,7 @@ async def chat(body: ChatIn) -> ChatOut:
         raise HTTPException(status_code=502, detail=f"LLM error: {type(exc).__name__}") from exc
     if out.profile is not None:
         out.recommendation = await engine.decide(out.profile)
+        out.recommendation.comparison = compare.compare(out.profile, out.recommendation.iron_set.id)
     out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
     return out
 
@@ -65,3 +74,16 @@ async def get_fitting(fitting_id: str) -> dict:
     if doc is None:
         raise HTTPException(status_code=404, detail="Fitting not found")
     return doc
+
+
+class CompareIn(BaseModel):
+    profile: PlayerProfile
+    head: str
+
+
+@router.post("/compare", response_model=ClubComparison)
+def compare_clubs(body: CompareIn) -> ClubComparison:
+    """Golfer's current 7-iron vs a Takomo head (slug), same simulated swing."""
+    if catalog.head(body.head) is None:
+        raise HTTPException(status_code=404, detail=f"Unknown head {body.head!r}")
+    return compare.compare(body.profile, body.head)

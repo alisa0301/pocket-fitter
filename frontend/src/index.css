@@ -171,3 +171,29 @@ button { font: inherit; cursor: pointer; }
   font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase;
 }
 .rec-cta:hover { background: var(--accent); }
+
+/* Current clubs vs Takomo */
+.cmp { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.cmp-heads { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin: 8px 0 14px; }
+.cmp-heads > div:not(.cmp-vs) { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--panel); border-radius: var(--radius); }
+.cmp-name { font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.1; }
+.cmp-name.accent { color: var(--accent); }
+.cmp-spec { color: var(--muted); font-size: 13px; }
+.cmp-vs { font-family: var(--display); font-weight: 700; color: var(--muted); text-transform: uppercase; font-size: 13px; }
+.cmp-highlights { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.cmp-highlights li { padding-left: 22px; position: relative; font-size: 15px; line-height: 1.45; }
+.cmp-highlights li::before { content: "→"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cmp-table th, .cmp-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.cmp-table th[scope="row"] { text-align: left; font-weight: 500; white-space: normal; }
+.cmp-table thead th { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cmp-table tr.takomo .cmp-diff { color: var(--accent); font-weight: 700; }
+.cmp-table tr.current .cmp-diff { color: var(--muted); }
+.cmp-how { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.cmp-how summary { cursor: pointer; font-family: var(--display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; }
+.cmp-how ul { margin: 6px 0 0; padding-left: 18px; }
+@media (max-width: 520px) {
+  .cmp-heads { grid-template-columns: 1fr; }
+  .cmp-vs { display: none; }
+  .cmp-table th, .cmp-table td { padding: 8px 3px; font-size: 13px; }
+}
