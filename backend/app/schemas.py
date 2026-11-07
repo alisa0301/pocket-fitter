@@ -124,6 +124,7 @@ class Recommendation(BaseModel):
 class ChatIn(BaseModel):
     messages: list[Message]
     fitting_id: str | None = None
+    demo: bool = Field(False, description="Scripted questions + rules engine, no LLM, not saved")
 
 
 class ChatOut(BaseModel):

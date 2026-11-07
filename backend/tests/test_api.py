@@ -42,3 +42,25 @@ def test_chat_without_mongo_has_no_fitting_id():
     r = client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]})
     assert r.json()["fitting_id"] is None
     assert client.get("/api/health").json()["db"] == "none"
+
+
+def test_demo_mode_never_calls_gemini(monkeypatch):
+    from app.core.config import settings
+    from app.services import gemini
+
+    monkeypatch.setattr(settings, "gemini_api_key", "set-but-broken")
+
+    async def boom(*a, **k):
+        raise AssertionError("Gemini must not be called in demo mode")
+
+    monkeypatch.setattr(gemini, "reply", boom)
+    msgs = []
+    for text in ["New irons", "Over 92", "120-140 yd", "Forgiveness", "High", "Blades"]:
+        msgs.append({"role": "user", "content": text})
+        r = client.post("/api/chat", json={"messages": msgs, "demo": True})
+        assert r.status_code == 200
+        d = r.json()
+        msgs.append({"role": "assistant", "content": d["reply"]})
+    assert d["recommendation"]["engine"] == "rules"
+    assert d["recommendation"]["comparison"]["metrics"]
+    assert d["fitting_id"] is None
