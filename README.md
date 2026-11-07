@@ -31,6 +31,21 @@ The chat endpoint (`POST /api/chat`) uses Gemini when `GEMINI_API_KEY` is set in
 (get one at https://aistudio.google.com/apikey); otherwise it runs a scripted demo flow.
 Change the model with `GEMINI_MODEL`. Prompt lives in `backend/app/services/gemini.py`.
 
+## MongoDB (optional)
+
+Set `MONGODB_URI` (e.g. a MongoDB Atlas connection string) in `backend/.env`. Without it the app
+reads the catalog from the bundled JSON and does not save fittings.
+
+- `products` / `catalog_meta`: Takomo's iron catalog (5 heads, 35 shafts, 3 grips, length/lie
+  options, fitting rules), loaded from `backend/app/data/takomo_products.json` by
+  `cd backend && uv run python -m app.seed` (idempotent; re-run after updating the JSON).
+  Served at `GET /api/products` and injected into the Gemini prompt.
+- `fittings`: one document per chat session (messages, step, final recommendation). `POST /api/chat`
+  returns a `fitting_id`; `GET /api/fittings/{id}` reads it back.
+
+For Cloud Run, store the URI in Secret Manager as `mongodb-uri` and add
+`MONGODB_URI=mongodb-uri:latest` to `secrets:` in `.github/workflows/deploy.yml`.
+
 ## Deploy (GitHub Actions -> Google Cloud Run)
 
 Every push to `main` runs tests, builds one Docker image (React build served by FastAPI) and deploys it

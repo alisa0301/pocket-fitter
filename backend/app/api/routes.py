@@ -4,8 +4,9 @@ from fastapi import APIRouter, HTTPException
 from google.genai import errors as genai_errors
 
 from app.core.config import settings
+from app.db import get_db
 from app.schemas import ChatIn, ChatOut
-from app.services import catalog, gemini, scripted
+from app.services import catalog, fittings, gemini, scripted
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -13,17 +14,35 @@ log = logging.getLogger(__name__)
 
 @router.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "llm": "gemini" if settings.gemini_api_key else "scripted"}
+    return {
+        "status": "ok",
+        "llm": "gemini" if settings.gemini_api_key else "scripted",
+        "db": "mongodb" if get_db() is not None else "none",
+    }
 
 
 @router.get("/products")
-def products() -> dict:
+async def products() -> dict:
     """Takomo iron catalog: heads, shafts, grips, length/lie options and fitting rules."""
-    return catalog.load()
+    return await catalog.load()
+
+
+@router.get("/fittings/{fitting_id}")
+async def get_fitting(fitting_id: str) -> dict:
+    doc = await fittings.get(fitting_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Fitting not found")
+    return doc
 
 
 @router.post("/chat", response_model=ChatOut)
 async def chat(body: ChatIn) -> ChatOut:
+    out = await _reply(body)
+    out.fitting_id = await fittings.save(body.fitting_id, body.messages, out)
+    return out
+
+
+async def _reply(body: ChatIn) -> ChatOut:
     if not settings.gemini_api_key:
         return scripted.reply(body.messages)
     try:

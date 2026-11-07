@@ -38,7 +38,15 @@ def test_products_catalog():
 
 
 def test_catalog_in_system_prompt():
-    from app.services import gemini
+    from app.services import catalog, gemini
 
-    assert "Iron 301 MB" in gemini.SYSTEM_PROMPT
-    assert "Takomo Obsidian" in gemini.SYSTEM_PROMPT
+    prompt = gemini.system_prompt(catalog.load_file())
+    assert "Iron 301 MB" in prompt
+    assert "Takomo Obsidian" in prompt
+    assert "(0-5)" in prompt
+
+
+def test_chat_without_mongo_has_no_fitting_id():
+    r = client.post("/api/chat", json={"messages": [{"role": "user", "content": "hi"}]})
+    assert r.json()["fitting_id"] is None
+    assert client.get("/api/health").json()["db"] == "none"

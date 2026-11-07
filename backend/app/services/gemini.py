@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 TOTAL_STEPS = 5
 
-SYSTEM_PROMPT = f"""\
+SYSTEM_PROMPT_TEMPLATE = """\
 You are Pocket Fitter, a friendly virtual golf club fitter for Takomo Golf.
 Goal: recommend a Takomo iron set (head, shaft, grip, length, lie) that fits the golfer.
 Only recommend products from the Takomo catalog below; never invent models or specs.
@@ -22,7 +22,7 @@ that fit your game. What brings you here?" Their first message answers that.
 
 How to run the conversation:
 - Ask ONE short question at a time, like a fitting tool would. Keep replies under 40 words.
-- Cover roughly {TOTAL_STEPS - 1} topics before recommending: what they're looking for, handicap or
+- Cover roughly {topics} topics before recommending: what they're looking for, handicap or
   experience, 7-iron carry distance or swing speed, typical miss / ball flight, and age or physical
   limits when relevant. Skip anything the golfer already told you.
 - After that, give a clear recommendation: Takomo head name, shaft (model, flex, weight), grip size,
@@ -30,13 +30,19 @@ How to run the conversation:
 - If the golfer asks a general question, answer it briefly, then continue the fitting.
 - Always offer 2-4 short tappable answer options in `suggestions` (max 4 words each).
   After the recommendation, offer follow-ups such as "Compare options", "Shaft options", "Start over".
-- `step` is how many fitting topics are covered so far (0-{TOTAL_STEPS}); set it to {TOTAL_STEPS}
+- `step` is how many fitting topics are covered so far (0-{total_steps}); set it to {total_steps}
   once you've given the recommendation.
 - Always reply in English, including `suggestions`, even if the golfer writes in another language.
 
 TAKOMO CATALOG
-{catalog.prompt_text()}
+{catalog}
 """
+
+
+def system_prompt(catalog_data: dict) -> str:
+    return SYSTEM_PROMPT_TEMPLATE.format(
+        total_steps=TOTAL_STEPS, topics=TOTAL_STEPS - 1, catalog=catalog.prompt_text(catalog_data)
+    )
 
 
 class _Answer(BaseModel):
@@ -61,7 +67,7 @@ async def reply(messages: list[Message]) -> ChatOut:
         for m in messages
     ]
     config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=system_prompt(await catalog.load()),
         response_mime_type="application/json",
         response_schema=_Answer,
         temperature=0.6,

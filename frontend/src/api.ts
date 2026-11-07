@@ -8,6 +8,7 @@ export interface ChatResponse {
   suggestions: string[];
   step: number;
   total_steps: number;
+  fitting_id: string | null;
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -22,5 +23,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const sendChat = (messages: Message[]) =>
-  api<ChatResponse>("/chat", { method: "POST", body: JSON.stringify({ messages }) });
+export const sendChat = (messages: Message[], fittingId: string | null) =>
+  api<ChatResponse>("/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages, fitting_id: fittingId }),
+  });

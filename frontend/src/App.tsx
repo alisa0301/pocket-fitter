@@ -15,6 +15,8 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Id of this fitting in MongoDB (null when the backend runs without a database).
+  const [fittingId, setFittingId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function App() {
     setStep({ current: 0, total: 4 });
     setInput("");
     setError("");
+    setFittingId(null);
   }
 
   async function send(text: string) {
@@ -41,9 +44,10 @@ export default function App() {
     setLoading(true);
     try {
       // Greeting is UI-only; the backend sees the real conversation.
-      const res = await sendChat(next.slice(1));
+      const res = await sendChat(next.slice(1), fittingId);
       setMessages([...next, { role: "assistant", content: res.reply }]);
       setSuggestions(res.suggestions);
+      setFittingId(res.fitting_id);
       setStep({ current: res.step, total: res.total_steps || 4 });
     } catch (e) {
       setError(`Couldn't get an answer from the fitter. ${e instanceof Error ? e.message : ""}`);
