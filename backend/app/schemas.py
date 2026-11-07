@@ -115,7 +115,9 @@ class Recommendation(BaseModel):
     set_makeup: str = ""
     adjustments: list[str] = []
     reasons: list[str] = []
-    confidence: float = Field(ge=0, le=1)
+    confidence: float = Field(ge=0, le=1)  # expected share of the spec that is right (calibrated)
+    # field -> calibrated probability that this pick matches the reference fit
+    field_confidence: dict[str, float] = {}
     engine: str
     comparison: ClubComparison | None = None
     similar: SimilarGolfers | None = None

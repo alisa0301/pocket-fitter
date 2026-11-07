@@ -23,8 +23,10 @@ def _f(v: str) -> float | None:
     return float(v) if v not in ("", None) else None
 
 
-def profile_from_row(r: dict) -> PlayerProfile:
+def profile_from_row(r: dict, own_loft: str | None = None) -> PlayerProfile:
+    """Questionnaire row (+ the golfer's own 7-iron loft from golfers.csv, when known)."""
     return PlayerProfile(
+        current_7i_loft_deg=_f(own_loft),
         age=int(r["age"]),
         sex=r["sex"],
         handedness=r["handedness"],
@@ -63,10 +65,11 @@ def read(path: Path) -> dict[str, dict]:
 def main(split_dir: str) -> None:
     d = Path(split_dir)
     questions, labels = read(d / "questionnaire.csv"), read(d / "labels.csv")
+    golfers = read(d / "golfers.csv")
     GOLFERS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(GOLFERS_PATH, "wt", encoding="utf-8", compresslevel=9) as out:
         for gid, q in questions.items():
-            profile = profile_from_row(q)
+            profile = profile_from_row(q, golfers[gid]["own_7i_loft_deg"])
             doc = {
                 "_id": gid,
                 "profile": profile.model_dump(exclude_none=True),

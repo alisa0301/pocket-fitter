@@ -37,6 +37,9 @@ FLIGHT = {"low": 0, "mid": 1, "high": 2}
 # (people overstate speed; carry is rounded to 5 yd).
 SPEED_FROM_REPORTED = (0.841, 10.17)
 SPEED_FROM_CARRY = (0.3376, 26.65)
+# With the golfer's own 7-iron loft: speed = a*carry + b*loft + c (train, golfers who know their loft).
+# A stronger (lower) loft carries further for the same speed. MAE 3.55 -> 3.36 mph on train.
+SPEED_FROM_CARRY_AND_LOFT = (0.3479, 0.8112, 0.133)
 DEFAULT_SPEED_MPH = 72.0
 
 # Feature scale: one unit of distance in the vector space. Smaller divisor = matters more.
@@ -61,6 +64,10 @@ def estimate_speed(p: PlayerProfile) -> float:
         a, b = SPEED_FROM_REPORTED
         return a * p.speed_mph + b
     if p.carry_yd:
+        loft = p.current_7i_loft_deg or p.current_7i_loft_estimate_deg
+        if loft:
+            a, b, c = SPEED_FROM_CARRY_AND_LOFT
+            return a * p.carry_yd + b * loft + c
         a, b = SPEED_FROM_CARRY
         return a * p.carry_yd + b
     return DEFAULT_SPEED_MPH

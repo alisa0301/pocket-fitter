@@ -3,6 +3,39 @@ import type { ClubComparison, Recommendation } from "./api";
 const signed = (n: number, unit: string, up: string, down: string) =>
   n === 0 ? "Standard" : `${Math.abs(n)}${unit} ${n > 0 ? up : down}`;
 
+const SURE_LABELS: [string, string][] = [
+  ["head", "Head"], ["flex", "Shaft flex"], ["material", "Steel / graphite"], ["shaft", "Shaft model"],
+  ["length", "Length"], ["lie", "Lie"], ["grip", "Grip"],
+];
+
+function HowSure({ fields }: { fields: Record<string, number> }) {
+  const rows = SURE_LABELS.filter(([k]) => fields[k] != null);
+  if (!rows.length) return null;
+  const tone = (p: number) => (p >= 0.75 ? "high" : p >= 0.5 ? "mid" : "low");
+  return (
+    <section className="sure" aria-label="How sure we are">
+      <p className="rec-label">How sure we are</p>
+      <ul>
+        {rows.map(([k, label]) => {
+          const p = fields[k];
+          return (
+            <li key={k} className={`sure-${tone(p)}`}>
+              <span>{label}</span>
+              <span className="rec-bar"><span style={{ width: `${Math.round(p * 100)}%` }} /></span>
+              <span className="num">{Math.round(p * 100)}%</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="sure-note">
+        How often a pick like this matched the reference fit for similar golfers in Takomo&apos;s data.
+        Low numbers are worth confirming in person{fields.lie != null && fields.lie < 0.5
+          ? ", lie especially (a ball-line test with your own 7-iron)" : ""}.
+      </p>
+    </section>
+  );
+}
+
 export function RecommendationCard({ rec }: { rec: Recommendation }) {
   const pct = Math.round(rec.confidence * 100);
   const spec: [string, string][] = [
@@ -50,13 +83,17 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
           </div>
         ))}
         <div>
-          <dt>Match confidence</dt>
+          <dt title="Expected share of this spec that matches a full fitting, calibrated on Takomo's data">
+            Expected match
+          </dt>
           <dd className="rec-conf">
             <span className="rec-bar"><span style={{ width: `${pct}%` }} /></span>
             {pct}%
           </dd>
         </div>
       </dl>
+
+      {rec.field_confidence && <HowSure fields={rec.field_confidence} />}
 
       {rec.reasons.length > 0 && (
         <>

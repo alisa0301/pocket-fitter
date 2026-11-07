@@ -64,6 +64,7 @@ export interface Recommendation {
   adjustments: string[];
   reasons: string[];
   confidence: number;
+  field_confidence: Record<string, number>;
   engine: string;
   similar: SimilarGolfers | null;
   comparison?: ClubComparison | null;

@@ -39,10 +39,22 @@ def test_compare_endpoint():
 
 def test_scripted_chat_includes_comparison():
     msgs = []
-    for text in ["New irons", "Over 92", "120-140 yd", "Forgiveness", "High", "Blades"]:
+    for text in ["New irons", "Over 92", "120-140 yd", "Forgiveness", "High",
+                 "Titleist T200, 2021", "30°"]:
         msgs.append({"role": "user", "content": text})
         r = client.post("/api/chat", json={"messages": msgs}).json()
         msgs.append({"role": "assistant", "content": r["reply"]})
     comp = r["recommendation"]["comparison"]
-    assert comp["current"]["label"] == "Your blades"
+    assert comp["current"]["label"] == "Titleist T200, 2021"
+    assert comp["current"]["loft_deg"] == 30 and comp["current"]["loft_source"] == "you"
     assert len(comp["metrics"]) == 5
+
+
+def test_scripted_current_irons_is_free_text():
+    from app.services import scripted
+
+    p = scripted._profile(["hi", "Over 92", "120-140 yd", "Forgiveness", "High",
+                           "Ping G425 from 2020, 7-iron is 29.5 deg", "Not sure"])
+    assert p.current_irons.startswith("Ping G425") and p.current_7i_loft_deg == 29.5  # year ignored
+    p = scripted._profile(["hi", "Over 92", "120-140 yd", "Forgiveness", "High", "Not sure", "33"])
+    assert p.current_irons is None and p.current_7i_loft_deg == 33

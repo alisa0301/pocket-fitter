@@ -55,7 +55,8 @@ def test_demo_mode_never_calls_gemini(monkeypatch):
 
     monkeypatch.setattr(gemini, "reply", boom)
     msgs = []
-    for text in ["New irons", "Over 92", "120-140 yd", "Forgiveness", "High", "Blades"]:
+    for text in ["New irons", "Over 92", "120-140 yd", "Forgiveness", "High", "Mizuno JPX 921",
+                 "Not sure"]:
         msgs.append({"role": "user", "content": text})
         r = client.post("/api/chat", json={"messages": msgs, "demo": True})
         assert r.status_code == 200

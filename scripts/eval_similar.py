@@ -51,6 +51,8 @@ def main(takomo_dir: str, k: int = 50) -> None:
     dev = Path(takomo_dir) / "data" / "dev"
     with open(dev / "questionnaire.csv", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
+    with open(dev / "golfers.csv", encoding="utf-8") as f:
+        lofts = {r["golfer_id"]: r["own_7i_loft_deg"] for r in csv.DictReader(f)}
     labels = pd.read_csv(dev / "labels.csv")
     q = pd.read_csv(dev / "questionnaire.csv")
 
@@ -60,7 +62,7 @@ def main(takomo_dir: str, k: int = 50) -> None:
         base.append({"golfer_id": r.golfer_id, "head": rec.head, "shaft": rec.shaft,
                          "length_in": rec.length_in, "lie_deg": rec.lie_deg, "grip": rec.grip,
                          "purchase": rec.purchase, "handedness": rec.handedness})
-    knn = [dict(golfer_id=r["golfer_id"], **knn_fit(profile_from_row(r), k)) for r in rows]
+    knn = [dict(golfer_id=r["golfer_id"], **knn_fit(profile_from_row(r, lofts[r["golfer_id"]]), k)) for r in rows]
 
     for name, pred in (("Takomo rules (B1)", base), (f"golfers like you (k={k})", knn)):
         res = S.summary(pd.DataFrame(pred), labels)

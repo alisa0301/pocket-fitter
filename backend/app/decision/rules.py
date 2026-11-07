@@ -7,10 +7,7 @@ another engine fails. On Takomo's dev split it scores 80.2 vs 77.1 for Takomo's 
 """
 
 from app.schemas import Option, PlayerProfile, Recommendation, SimilarGolfers
-from app.services import catalog, similar
-
-PROFILE_FIELDS = ("age", "sex", "score_bucket", "flight", "tempo", "height_cm",
-                  "wrist_to_floor_cm", "glove")
+from app.services import catalog, confidence, similar
 
 
 def head_option(slug: str) -> Option:
@@ -26,10 +23,17 @@ def shaft_option(slug: str) -> Option:
                               f"{tempo} tempo.")
 
 
-def completeness(p: PlayerProfile) -> float:
-    known = sum(getattr(p, f) is not None for f in PROFILE_FIELDS)
-    known += bool(p.speed_mph or p.carry_yd) * 2 + bool(p.characteristics)
-    return known / (len(PROFILE_FIELDS) + 3)
+def chosen_values(head: str, shaft: str, length: float, lie: int, grip: str) -> dict[str, str]:
+    """The picked spec as the strings SimilarGolfers uses, per confidence field."""
+    s = catalog.shaft(shaft)
+    return {"head": head, "flex": s["flex"], "material": s["material"], "shaft": shaft,
+            "length": str(float(length)), "lie": str(int(lie)), "grip": grip}
+
+
+def calibrated_confidence(p: PlayerProfile, found: SimilarGolfers, head: str, shaft: str,
+                          length: float, lie: int, grip: str) -> tuple[float, dict[str, float]]:
+    fields = confidence.per_field(found, chosen_values(head, shaft, length, lie, grip), p)
+    return confidence.overall(fields), fields
 
 
 def adjustments(length_in: float, lie_deg: int, grip: str) -> list[str]:
@@ -62,6 +66,10 @@ def decide(p: PlayerProfile, found: SimilarGolfers | None = None) -> Recommendat
     ]
     if found.expected_carry_yd:
         reasons.append(f"Expected 7-iron carry with this head: about {round(found.expected_carry_yd)} yd.")
+    if len(found.head) > 1 and found.head[0].share - found.head[1].share < 0.15:
+        reasons.append(f"Close call: {round(found.head[1].share * 100)}% of similar golfers went with "
+                       f"the {catalog.head(found.head[1].value)['name']}; worth trying both.")
+    conf, fields = calibrated_confidence(p, found, head, shaft, length, lie, grip)
     return Recommendation(
         iron_set=head_option(head),
         shaft=shaft_option(shaft),
@@ -72,7 +80,8 @@ def decide(p: PlayerProfile, found: SimilarGolfers | None = None) -> Recommendat
         purchase=catalog.purchase_for(head, shaft, length, lie, grip),
         adjustments=adjustments(length, lie, grip),
         reasons=reasons,
-        confidence=round(0.5 * found.head[0].share + 0.5 * completeness(p), 2),
+        confidence=conf,
+        field_confidence=fields,
         engine="rules",
         similar=found,
     )

@@ -17,7 +17,8 @@ You are an expert Takomo Golf club fitter making the FINAL iron decision.
 Pick one head and one shaft from the Takomo catalog (use their slugs; the shaft must list the head),
 a runner-up head, grip, length and lie from the allowed options, 2-4 concrete adjustments and
 2-4 short reasons tied to the player's answers. Confidence is 0..1: lower it when key answers
-(score, 7-iron speed or carry, priorities, height) are missing.
+(score, 7-iron speed or carry, priorities, height) are missing (the app replaces it with a
+calibrated value).
 You get the spec that fitted the most similar golfers in Takomo's data and a baseline built from it;
 agree with the baseline unless the player's answers clearly say otherwise, and mention the
 similar golfers in one reason.
@@ -57,6 +58,9 @@ async def decide(profile: PlayerProfile, found: SimilarGolfers | None = None) ->
         log.warning("Gemini picked an unbuildable spec %s; using rules", d.model_dump())
         return baseline
     runner_up = d.runner_up if catalog.head(d.runner_up) and d.runner_up != d.head else None
+    # Calibrated from how many similar golfers share each pick, not the model's self-report.
+    conf, fields = rules.calibrated_confidence(profile, found, d.head, d.shaft, d.length_in,
+                                               d.lie_deg, d.grip)
     return Recommendation(
         iron_set=rules.head_option(d.head),
         shaft=rules.shaft_option(d.shaft),
@@ -67,7 +71,8 @@ async def decide(profile: PlayerProfile, found: SimilarGolfers | None = None) ->
         purchase=catalog.purchase_for(d.head, d.shaft, d.length_in, d.lie_deg, d.grip),
         adjustments=d.adjustments[:4],
         reasons=d.reasons[:4],
-        confidence=max(0.0, min(1.0, d.confidence)),
+        confidence=conf,
+        field_confidence=fields,
         engine="gemini",
         similar=found,
     )
