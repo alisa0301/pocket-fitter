@@ -17,6 +17,14 @@ QUESTIONS = [
       "Forged feel": {"characteristics": ["forged feel", "workability", "distance control"]}}),
     ("Which ball flight do you want?",
      {"Low": {"flight": "low"}, "Mid": {"flight": "mid"}, "High": {"flight": "high"}}),
+    ("What kind of irons do you play now?",
+     {"Blades": {"current_irons": "Your blades", "current_7i_loft_estimate_deg": 34,
+                 "current_forgiveness_estimate": 1},
+      "Players cavity": {"current_irons": "Your players cavity backs",
+                         "current_7i_loft_estimate_deg": 33, "current_forgiveness_estimate": 2},
+      "Game improvement": {"current_irons": "Your game-improvement irons",
+                           "current_7i_loft_estimate_deg": 30, "current_forgiveness_estimate": 4},
+      "Not sure": {}}),
 ]
 
 

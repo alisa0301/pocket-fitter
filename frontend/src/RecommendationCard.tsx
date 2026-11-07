@@ -1,4 +1,4 @@
-import type { Recommendation } from "./api";
+import type { ClubComparison, Recommendation } from "./api";
 
 const signed = (n: number, unit: string, up: string, down: string) =>
   n === 0 ? "Standard" : `${Math.abs(n)}${unit} ${n > 0 ? up : down}`;
@@ -70,11 +70,67 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
           <ul className="rec-list muted">{rec.adjustments.map((a) => <li key={a}>{a}</li>)}</ul>
         </>
       )}
+      {rec.comparison && <Comparison c={rec.comparison} />}
       {rec.iron_set.url && (
         <a className="rec-cta" href={rec.iron_set.url} target="_blank" rel="noreferrer">
           View {rec.iron_set.name} <span aria-hidden>→</span>
         </a>
       )}
     </article>
+  );
+}
+
+const SOURCE: Record<string, string> = { you: "your spec", estimate: "estimated", default: "assumed" };
+
+function Comparison({ c }: { c: ClubComparison }) {
+  const fmt = (v: number) => (Number.isInteger(v) ? v : v.toFixed(1));
+  return (
+    <section className="cmp">
+      <p className="rec-label">Your clubs vs {c.takomo.label}</p>
+      <div className="cmp-heads">
+        <div>
+          <span className="cmp-name">{c.current.label}</span>
+          <span className="cmp-spec">
+            7i {c.current.loft_deg}° ({SOURCE[c.current.loft_source]}) · forgiveness {c.current.forgiveness}/5
+          </span>
+        </div>
+        <div className="cmp-vs" aria-hidden>vs</div>
+        <div>
+          <span className="cmp-name accent">{c.takomo.label}</span>
+          <span className="cmp-spec">7i {c.takomo.loft_deg}° · forgiveness {c.takomo.forgiveness}/5</span>
+        </div>
+      </div>
+
+      {c.highlights.length > 0 && (
+        <ul className="cmp-highlights">{c.highlights.map((h) => <li key={h}>{h}</li>)}</ul>
+      )}
+
+      <table className="cmp-table">
+        <thead>
+          <tr><th />{/* metric */}<th>Now</th><th>Takomo</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          {c.metrics.map((m) => (
+            <tr key={m.name} className={m.better}>
+              <th scope="row">{m.name}</th>
+              <td>{fmt(m.current)} {m.unit}</td>
+              <td>{fmt(m.takomo)} {m.unit}</td>
+              <td className="cmp-diff">
+                {m.better === "same" ? "≈" : `${m.difference > 0 ? "+" : ""}${fmt(m.difference)} ${m.unit}`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <details className="cmp-how">
+        <summary>How we compared</summary>
+        <p>
+          Both clubs hit the same {c.swing_speed_mph} mph swing with your typical strike pattern in a
+          calibrated ball-flight model. These are model estimates, not launch-monitor results.
+        </p>
+        <ul>{c.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
+      </details>
+    </section>
   );
 }

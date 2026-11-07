@@ -49,7 +49,7 @@ def test_decide_endpoint():
 
 def test_scripted_chat_ends_with_recommendation():
     msgs = []
-    for text in ["New irons", "Over 92", "Under 120 yd", "Forgiveness", "High"]:
+    for text in ["New irons", "Over 92", "Under 120 yd", "Forgiveness", "High", "Not sure"]:
         msgs.append({"role": "user", "content": text})
         r = client.post("/api/chat", json={"messages": msgs}).json()
         msgs.append({"role": "assistant", "content": r["reply"]})

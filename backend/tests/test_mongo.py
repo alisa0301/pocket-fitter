@@ -38,7 +38,7 @@ def test_fitting_is_saved_and_continued(mongo):
     assert fid
 
     msgs += [{"role": "assistant", "content": first["reply"]}]
-    for text in ["Over 92", "Under 120 yd", "Forgiveness", "High"]:
+    for text in ["Over 92", "Under 120 yd", "Forgiveness", "High", "Not sure"]:
         msgs.append({"role": "user", "content": text})
         out = client.post("/api/chat", json={"messages": msgs, "fitting_id": fid}).json()
         assert out["fitting_id"] == fid

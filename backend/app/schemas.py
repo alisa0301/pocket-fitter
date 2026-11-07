@@ -32,6 +32,16 @@ class PlayerProfile(BaseModel):
     height_cm: float | None = None
     wrist_to_floor_cm: float | None = Field(None, description="Wrist crease to floor in golf shoes")
     glove: Literal["XS", "S", "M", "M/L", "L", "XL"] | None = None
+    # Current irons, for the "your clubs vs Takomo" comparison
+    current_irons: str | None = Field(None, description="Brand, model and rough age of current irons")
+    current_7i_loft_deg: float | None = Field(None, description="Current 7-iron loft, if the golfer knows it")
+    current_7i_loft_estimate_deg: float | None = Field(
+        None, description="Best estimate of that model's 7-iron loft when the golfer doesn't know it"
+    )
+    current_forgiveness_estimate: int | None = Field(
+        None, ge=1, le=5,
+        description="Current irons' forgiveness on Takomo's 1-5 scale (1 blade ... 5 max game improvement)",
+    )
 
 
 class SpecShare(BaseModel):
@@ -65,6 +75,35 @@ class Option(BaseModel):
     price_eur: float | None = None
 
 
+class ClubSpec(BaseModel):
+    label: str
+    loft_deg: float
+    loft_source: Literal["you", "estimate", "default", "takomo"]
+    forgiveness: int
+    forgiveness_source: Literal["estimate", "default", "takomo"]
+
+
+class ComparisonMetric(BaseModel):
+    name: str
+    unit: str
+    current: float
+    takomo: float
+    difference: float
+    better: Literal["takomo", "current", "same"]
+
+
+class ClubComparison(BaseModel):
+    """Current 7-iron vs the recommended Takomo head, same simulated swing through the pack's
+    ball-flight model."""
+
+    current: ClubSpec
+    takomo: ClubSpec
+    swing_speed_mph: float
+    metrics: list[ComparisonMetric]
+    highlights: list[str]
+    assumptions: list[str]
+
+
 class Recommendation(BaseModel):
     iron_set: Option  # Takomo head
     shaft: Option
@@ -78,6 +117,7 @@ class Recommendation(BaseModel):
     reasons: list[str] = []
     confidence: float = Field(ge=0, le=1)
     engine: str
+    comparison: ClubComparison | None = None
     similar: SimilarGolfers | None = None
 
 
