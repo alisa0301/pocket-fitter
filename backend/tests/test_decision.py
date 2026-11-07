@@ -91,3 +91,12 @@ def test_gemini_engine_rejects_unbuildable_spec(monkeypatch):
 def test_engine_failure_falls_back_to_rules(monkeypatch):
     monkeypatch.setattr(settings, "decision_engine", "jeff")  # placeholder raises
     assert asyncio.run(engine.decide(BEGINNER)).engine == "rules"
+
+
+def test_every_head_has_media():
+    from app.services import catalog
+
+    for head in catalog.load_file()["heads"]:
+        m = catalog.media(head["slug"])
+        assert m["image_url"].startswith("https://cdn.shopify.com/"), head["slug"]
+        assert m["url"].startswith("https://takomogolf.com/products/"), head["slug"]

@@ -1,0 +1,8 @@
+{
+  "_source": "takomogolf.com/collections/all/products.json, fetched 2026-11-07. Images are Takomo's own product photos (Shopify CDN); price is the EUR list price of the complete set.",
+  "101-mkii": {"image_url": "https://cdn.shopify.com/s/files/1/0701/3892/1157/files/101_MKII_Bite_Square_b83c2537-874d-4a55-816e-1a75007505ac.jpg", "url": "https://takomogolf.com/products/iron-101-mkii", "price_eur": 579},
+  "201-mkii": {"image_url": "https://cdn.shopify.com/s/files/1/0701/3892/1157/files/201_MKII_lifestyle_03.jpg", "url": "https://takomogolf.com/products/iron-201-mkii", "price_eur": 649},
+  "201t-mkii": {"image_url": "https://cdn.shopify.com/s/files/1/0701/3892/1157/files/201T_MKII_lifestyle_03.jpg", "url": "https://takomogolf.com/products/iron-201t-mkii", "price_eur": 679},
+  "301-cb": {"image_url": "https://cdn.shopify.com/s/files/1/0701/3892/1157/files/New301CB-1_86d4589b-50b3-4eec-94ff-a23531e32c30.png", "url": "https://takomogolf.com/products/iron-301-cb", "price_eur": 649},
+  "301-mb": {"image_url": "https://cdn.shopify.com/s/files/1/0701/3892/1157/files/New301MB-2.png", "url": "https://takomogolf.com/products/iron-301-combo", "price_eur": null}
+}
