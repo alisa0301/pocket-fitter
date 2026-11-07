@@ -1,0 +1,86 @@
+name: Test & deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION || 'europe-north1' }}
+  SERVICE: ${{ vars.CLOUD_RUN_SERVICE || 'pocket-fitter' }}
+  REPOSITORY: ${{ vars.ARTIFACT_REPO || 'pocket-fitter' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Backend tests
+        working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run ruff check app tests
+          uv run pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Frontend build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for Workload Identity Federation
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & push image
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE:${GITHUB_SHA}"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}
+          flags: >-
+            --allow-unauthenticated
+            --service-account=${{ vars.GCP_RUNTIME_SA }}
+            --memory=512Mi
+            --max-instances=3
+          env_vars: |
+            GEMINI_MODEL=${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          secrets: |
+            GEMINI_API_KEY=gemini-api-key:latest
+
+      - name: Smoke test
+        run: |
+          echo "Deployed to ${{ steps.deploy.outputs.url }}"
+          curl -fsS "${{ steps.deploy.outputs.url }}/api/health"
