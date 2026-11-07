@@ -1,0 +1,36 @@
+slug,model,build,manufacturer,material,flex,weight_g,tempo_profile,flight_profile,heads
+kbs-tour-regular,KBS Tour,MKII,KBS,steel,regular,120,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+kbs-tour-stiff,KBS Tour,MKII,KBS,steel,stiff,130,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+kbs-tour-x-stiff,KBS Tour,MKII,KBS,steel,x-stiff,133,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+kbs-tour-regular-301,KBS Tour,301,KBS,steel,regular,120,slow|mid,low|mid,301-cb|301-mb
+kbs-tour-stiff-301,KBS Tour,301,KBS,steel,stiff,130,slow|mid,low|mid,301-cb|301-mb
+kbs-tour-x-stiff-301,KBS Tour,301,KBS,steel,x-stiff,133,slow|mid,low|mid,301-cb|301-mb
+kbs-tour-lite-regular,KBS Tour Lite,MKII,KBS,steel,regular,105,slow,mid|high,101-mkii|201-mkii|201t-mkii
+kbs-tour-lite-stiff,KBS Tour Lite,MKII,KBS,steel,stiff,105,slow,mid|high,101-mkii|201-mkii|201t-mkii
+kbs-tour-lite-x-stiff,KBS Tour Lite,MKII,KBS,steel,x-stiff,110,slow,mid|high,101-mkii|201-mkii|201t-mkii
+kbs-tour-lite-regular-301,KBS Tour Lite,301,KBS,steel,regular,105,slow|mid,high,301-cb|301-mb
+kbs-tour-lite-stiff-301,KBS Tour Lite,301,KBS,steel,stiff,105,slow|mid,high,301-cb|301-mb
+kbs-tour-lite-x-stiff-301,KBS Tour Lite,301,KBS,steel,x-stiff,110,slow|mid,high,301-cb|301-mb
+kbs-c-taper-regular,KBS C-Taper,,KBS,steel,regular,125,fast,low,301-cb|301-mb
+kbs-c-taper-stiff,KBS C-Taper,,KBS,steel,stiff,135,fast,low,301-cb|301-mb
+kbs-c-taper-x-stiff,KBS C-Taper,,KBS,steel,x-stiff,140,fast,low,301-cb|301-mb
+kbs-c-taper-lite-regular,KBS C-Taper Lite,,KBS,steel,regular,109,fast,mid|high,301-cb|301-mb
+kbs-c-taper-lite-stiff,KBS C-Taper Lite,,KBS,steel,stiff,119,fast,mid|high,301-cb|301-mb
+kbs-c-taper-lite-x-stiff,KBS C-Taper Lite,,KBS,steel,x-stiff,125,fast,mid|high,301-cb|301-mb
+mitsubishi-mmt-50-l,Mitsubishi MMT,,Mitsubishi,graphite,lady,57,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+mitsubishi-mmt-60-a,Mitsubishi MMT,,Mitsubishi,graphite,senior,62,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+mitsubishi-mmt-70-r,Mitsubishi MMT,,Mitsubishi,graphite,regular,73,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+mitsubishi-mmt-80-s,Mitsubishi MMT,,Mitsubishi,graphite,stiff,86,mid|fast,low|mid,101-mkii|201-mkii|201t-mkii
+true-temper-denali-silver-40g-4-0,True Temper Denali Silver,,True Temper,graphite,lady,53,slow,mid|high,101-mkii|201-mkii|201t-mkii
+true-temper-denali-silver-50g-5-0,True Temper Denali Silver,,True Temper,graphite,senior,58,slow,mid|high,101-mkii|201-mkii|201t-mkii
+true-temper-denali-silver-60g-5-5,True Temper Denali Silver,,True Temper,graphite,regular,77,slow,mid|high,101-mkii|201-mkii|201t-mkii
+true-temper-denali-silver-70g-6-0,True Temper Denali Silver,,True Temper,graphite,stiff,89,slow,mid|high,101-mkii|201-mkii|201t-mkii
+obsidian-75-a,Takomo Obsidian,,Takomo,graphite,senior,72,any,low|mid,301-cb|301-mb
+obsidian-75-r,Takomo Obsidian,,Takomo,graphite,regular,75,any,low|mid,301-cb|301-mb
+obsidian-95-r,Takomo Obsidian,,Takomo,graphite,regular,96,any,low|mid,301-cb|301-mb
+obsidian-95-s,Takomo Obsidian,,Takomo,graphite,stiff,98,any,low|mid,301-cb|301-mb
+obsidian-115-s,Takomo Obsidian,,Takomo,graphite,stiff,110,any,low|mid,301-cb|301-mb
+obsidian-115-x,Takomo Obsidian,,Takomo,graphite,x-stiff,111,any,low|mid,301-cb|301-mb
+fujikura-atmos-red-a,Fujikura Atmos Red,,Fujikura,graphite,senior,72,any,high,301-cb|301-mb
+fujikura-atmos-red-r,Fujikura Atmos Red,,Fujikura,graphite,regular,72,any,high,301-cb|301-mb
+fujikura-atmos-red-s,Fujikura Atmos Red,,Fujikura,graphite,stiff,72,any,high,301-cb|301-mb

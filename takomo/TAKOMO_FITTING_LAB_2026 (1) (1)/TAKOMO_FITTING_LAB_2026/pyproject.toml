@@ -1,0 +1,21 @@
+[project]
+name = "takomo-fit"
+version = "1.1.0"
+description = "Baseline fitting rules, shot physics and scoring for the Takomo Golf x Since AI Hackathon 2026 challenge"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22", "pandas>=1.4"]
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+camera = ["opencv-contrib-python>=4.8", "reportlab>=3.6"]
+dev = ["pytest>=7", "scipy>=1.9"]
+
+[tool.setuptools]
+packages = ["takomo_fit"]
+
+[tool.setuptools.package-data]
+takomo_fit = ["data/*.json", "data/*.csv"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
