@@ -11,8 +11,8 @@
   --accent-hover: #e65f00;
   --accent-ink: #ffffff;
   --radius: 6px;
-  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
-  font-family: "Barlow", system-ui, sans-serif;
+  --display: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  font-family: "Barlow", "Roboto", system-ui, sans-serif;
   color: var(--ink);
   background: var(--bg);
   color-scheme: light;

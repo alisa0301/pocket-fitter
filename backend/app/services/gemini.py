@@ -1,5 +1,5 @@
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
@@ -51,16 +51,21 @@ async def reply(messages: list[Message]) -> ChatOut:
         types.Content(role="user" if m.role == "user" else "model", parts=[types.Part(text=m.content)])
         for m in messages
     ]
-    resp = await _get_client().aio.models.generate_content(
-        model=settings.gemini_model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            response_mime_type="application/json",
-            response_schema=_Answer,
-            temperature=0.6,
-        ),
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        response_mime_type="application/json",
+        response_schema=_Answer,
+        temperature=0.6,
     )
+    try:
+        resp = await _get_client().aio.models.generate_content(
+            model=settings.gemini_model, contents=contents, config=config
+        )
+    except errors.ServerError:
+        # Primary model overloaded (503) -> try the fallback once.
+        resp = await _get_client().aio.models.generate_content(
+            model=settings.gemini_fallback_model, contents=contents, config=config
+        )
     answer = resp.parsed if isinstance(resp.parsed, _Answer) else _Answer.model_validate_json(resp.text)
     return ChatOut(
         reply=answer.reply,
