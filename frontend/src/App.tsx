@@ -45,8 +45,8 @@ export default function App() {
       setMessages([...next, { role: "assistant", content: res.reply }]);
       setSuggestions(res.suggestions);
       setStep({ current: res.step, total: res.total_steps || 4 });
-    } catch {
-      setError("Couldn't reach the fitter. Is the backend running?");
+    } catch (e) {
+      setError(`Couldn't get an answer from the fitter. ${e instanceof Error ? e.message : ""}`);
     } finally {
       setLoading(false);
     }
