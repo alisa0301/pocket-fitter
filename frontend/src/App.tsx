@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { sendChat, type Message } from "./api";
+import { sendChat, type Message, type Recommendation } from "./api";
+import { RecommendationCard } from "./RecommendationCard";
 
 const GREETING: Message = {
   role: "assistant",
@@ -8,8 +9,10 @@ const GREETING: Message = {
 const RESET_WORDS = new Set(["start over"]);
 const START_OPTIONS = ["I'm looking for new gear", "Just researching", "Comparing brands", "I'm new to golf"];
 
+type Item = Message & { recommendation?: Recommendation };
+
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [messages, setMessages] = useState<Item[]>([GREETING]);
   const [suggestions, setSuggestions] = useState<string[]>(START_OPTIONS);
   const [step, setStep] = useState({ current: 0, total: 4 });
   const [input, setInput] = useState("");
@@ -33,16 +36,19 @@ export default function App() {
     const content = text.trim();
     if (!content || loading) return;
     if (RESET_WORDS.has(content.toLowerCase())) return reset();
-    const next: Message[] = [...messages, { role: "user", content }];
+    const next: Item[] = [...messages, { role: "user", content }];
     setMessages(next);
     setSuggestions([]);
     setInput("");
     setError("");
     setLoading(true);
     try {
-      // Greeting is UI-only; the backend sees the real conversation.
-      const res = await sendChat(next.slice(1));
-      setMessages([...next, { role: "assistant", content: res.reply }]);
+      // Greeting is UI-only; the backend sees the real conversation (recommendations as text).
+      const res = await sendChat(next.slice(1).map(toBackendMessage));
+      setMessages([
+        ...next,
+        { role: "assistant", content: res.reply, recommendation: res.recommendation ?? undefined },
+      ]);
       setSuggestions(res.suggestions);
       setStep({ current: res.step, total: res.total_steps || 4 });
     } catch (e) {
@@ -78,7 +84,10 @@ export default function App() {
         <div className="messages">
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
-              <p className="bubble">{m.content}</p>
+              <div className="msg-body">
+                <p className="bubble">{m.content}</p>
+                {m.recommendation && <RecommendationCard rec={m.recommendation} />}
+              </div>
             </div>
           ))}
           {loading && (
@@ -117,4 +126,13 @@ export default function App() {
       </section>
     </div>
   );
+}
+
+function toBackendMessage(m: Item): Message {
+  if (!m.recommendation) return { role: m.role, content: m.content };
+  const r = m.recommendation;
+  const text =
+    `${m.content}\n[Recommendation] Irons: ${r.iron_set.name}. Shaft: ${r.shaft.name}. ` +
+    `Set: ${r.set_makeup}. Reasons: ${r.reasons.join(" ")} Adjustments: ${r.adjustments.join(" ")}`;
+  return { role: m.role, content: text };
 }

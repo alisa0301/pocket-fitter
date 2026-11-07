@@ -3,7 +3,22 @@ export interface Message {
   role: Role;
   content: string;
 }
+export interface Option {
+  id: string;
+  name: string;
+  description: string;
+}
+export interface Recommendation {
+  iron_set: Option;
+  shaft: Option;
+  set_makeup: string;
+  adjustments: string[];
+  reasons: string[];
+  confidence: number;
+  engine: string;
+}
 export interface ChatResponse {
+  recommendation: Recommendation | null;
   reply: string;
   suggestions: string[];
   step: number;

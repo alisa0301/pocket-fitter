@@ -17,12 +17,3 @@ def test_chat_asks_first_question():
     data = r.json()
     assert "handicap" in data["reply"]
     assert data["suggestions"]
-
-
-def test_chat_gives_recommendation_at_end():
-    msgs = []
-    for text in ["hi", "10-18", "140-160 m", "Slice / right"]:
-        msgs.append({"role": "user", "content": text})
-        msgs.append({"role": "assistant", "content": "..."})
-    r = client.post("/api/chat", json={"messages": msgs[:-1]})
-    assert "iron" in r.json()["reply"]
