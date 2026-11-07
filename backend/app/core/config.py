@@ -7,5 +7,8 @@ class Settings(BaseSettings):
     app_name: str = "Pocket Fitter API"
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-latest"
+
 
 settings = Settings()
