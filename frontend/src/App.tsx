@@ -5,7 +5,7 @@ const GREETING: Message = {
   role: "assistant",
   content: "Hi, I'm your Pocket Fitter. I'll help you find clubs that fit your game. What brings you here?",
 };
-const RESET_WORDS = new Set(["start over", "начать заново", "aloita alusta"]);
+const RESET_WORDS = new Set(["start over"]);
 const START_OPTIONS = ["I'm looking for new gear", "Just researching", "Comparing brands", "I'm new to golf"];
 
 export default function App() {

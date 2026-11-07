@@ -26,7 +26,7 @@ How to run the conversation:
   After the recommendation, offer follow-ups such as "Compare options", "Shaft options", "Start over".
 - `step` is how many fitting topics are covered so far (0-{TOTAL_STEPS}); set it to {TOTAL_STEPS}
   once you've given the recommendation.
-- Reply in the language the golfer writes in.
+- Always reply in English, including `suggestions`, even if the golfer writes in another language.
 """
 
 
