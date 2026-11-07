@@ -1,9 +1,13 @@
+import logging
+
 from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.schemas import ChatOut, Message
+
+log = logging.getLogger(__name__)
 
 TOTAL_STEPS = 5
 
@@ -61,8 +65,12 @@ async def reply(messages: list[Message]) -> ChatOut:
         resp = await _get_client().aio.models.generate_content(
             model=settings.gemini_model, contents=contents, config=config
         )
-    except errors.ServerError:
-        # Primary model overloaded (503) -> try the fallback once.
+    except errors.APIError as exc:
+        # Primary model overloaded (503), rate-limited (429) or retired (404) -> try the fallback.
+        if exc.code not in (404, 429, 500, 502, 503) or not settings.gemini_fallback_model:
+            raise
+        log.warning("Gemini %s failed (%s), falling back to %s",
+                    settings.gemini_model, exc.code, settings.gemini_fallback_model)
         resp = await _get_client().aio.models.generate_content(
             model=settings.gemini_fallback_model, contents=contents, config=config
         )
