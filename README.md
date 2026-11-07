@@ -2,6 +2,8 @@
 
 Since AI Hackathon project. Python (FastAPI) backend + React (Vite, TypeScript) frontend. AI agent sessions tracked with [Entire](https://docs.entire.io).
 
+One-page write-up (idea, what the PoC proves, validation, trust, next steps): [`docs/WRITEUP.md`](docs/WRITEUP.md).
+
 ## Structure
 
 ```
