@@ -15,7 +15,7 @@ PROFILE_FIELDS = ("age", "sex", "score_bucket", "flight", "tempo", "height_cm",
 
 def head_option(slug: str) -> Option:
     h = catalog.head(slug)
-    return Option(id=slug, name=h["name"], description=h["description"])
+    return Option(id=slug, name=h["name"], description=h["description"], **catalog.media(slug))
 
 
 def shaft_option(slug: str) -> Option:

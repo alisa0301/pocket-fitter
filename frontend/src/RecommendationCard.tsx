@@ -20,10 +20,19 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
         <span className="rec-engine" title="Decision engine">{rec.engine}</span>
       </header>
 
+      {rec.iron_set.image_url && (
+        <a className="rec-photo" href={rec.iron_set.url ?? undefined} target="_blank" rel="noreferrer">
+          <img src={`${rec.iron_set.image_url}?width=900`} alt={rec.iron_set.name} loading="lazy" />
+        </a>
+      )}
+
       <div className="rec-grid">
         <section>
           <p className="rec-label">Irons</p>
           <h3>{rec.iron_set.name}</h3>
+          {rec.iron_set.price_eur != null && (
+            <p className="rec-price">€{rec.iron_set.price_eur.toFixed(0)}</p>
+          )}
           <p className="rec-desc">{rec.iron_set.description}</p>
         </section>
         <section>
@@ -60,6 +69,11 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
           <p className="rec-label">Adjustments</p>
           <ul className="rec-list muted">{rec.adjustments.map((a) => <li key={a}>{a}</li>)}</ul>
         </>
+      )}
+      {rec.iron_set.url && (
+        <a className="rec-cta" href={rec.iron_set.url} target="_blank" rel="noreferrer">
+          View {rec.iron_set.name} <span aria-hidden>→</span>
+        </a>
       )}
     </article>
   );

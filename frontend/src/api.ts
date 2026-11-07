@@ -25,6 +25,9 @@ export interface Option {
   id: string;
   name: string;
   description: string;
+  image_url?: string | null;
+  url?: string | null;
+  price_eur?: number | null;
 }
 export interface Recommendation {
   iron_set: Option;

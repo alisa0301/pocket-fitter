@@ -17,6 +17,7 @@ from app.db import get_db
 log = logging.getLogger(__name__)
 
 PRODUCTS_PATH = Path(__file__).resolve().parent.parent / "data" / "takomo_products.json"
+MEDIA_PATH = PRODUCTS_PATH.with_name("takomo_media.json")
 KINDS = {"heads": "head", "shafts": "shaft", "grips": "grip"}
 META_ID = "takomo"
 
@@ -67,6 +68,17 @@ async def load() -> dict:
         return load_file()
     _cache = from_documents(products, meta)
     return _cache
+
+
+@lru_cache(maxsize=1)
+def _media() -> dict:
+    with open(MEDIA_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def media(slug: str) -> dict:
+    """Product photo, product page and price for a head (from takomogolf.com); {} if unknown."""
+    return _media().get(slug, {})
 
 
 def clear_cache() -> None:

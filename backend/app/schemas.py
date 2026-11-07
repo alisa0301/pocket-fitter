@@ -60,6 +60,9 @@ class Option(BaseModel):
     id: str
     name: str
     description: str
+    image_url: str | None = None
+    url: str | None = None
+    price_eur: float | None = None
 
 
 class Recommendation(BaseModel):
