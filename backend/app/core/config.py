@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash"
     gemini_fallback_model: str = "gemini-2.5-flash"
+
+    @field_validator("gemini_api_key", "gemini_model", "gemini_fallback_model")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return v.strip()
 
 
 settings = Settings()

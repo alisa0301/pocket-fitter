@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, HTTPException
+from google.genai import errors as genai_errors
 
 from app.core.config import settings
 from app.schemas import ChatIn, ChatOut
@@ -21,6 +22,9 @@ async def chat(body: ChatIn) -> ChatOut:
         return scripted.reply(body.messages)
     try:
         return await gemini.reply(body.messages)
-    except Exception as exc:  # surface a clean error to the UI
+    except genai_errors.APIError as exc:
         log.exception("Gemini call failed")
-        raise HTTPException(status_code=502, detail="LLM request failed") from exc
+        raise HTTPException(status_code=502, detail=f"Gemini {exc.code}: {exc.message}") from exc
+    except Exception as exc:
+        log.exception("Gemini call failed")
+        raise HTTPException(status_code=502, detail=f"LLM error: {type(exc).__name__}") from exc
