@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { sendChat, type Message, type Recommendation } from "./api";
 import { RecommendationCard } from "./RecommendationCard";
+import SimilarCard from "./SimilarCard";
 
 const GREETING: Message = {
   role: "assistant",
@@ -18,6 +19,8 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Id of this fitting in MongoDB (null when the backend runs without a database).
+  const [fittingId, setFittingId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export default function App() {
     setStep({ current: 0, total: 4 });
     setInput("");
     setError("");
+    setFittingId(null);
   }
 
   async function send(text: string) {
@@ -44,12 +48,13 @@ export default function App() {
     setLoading(true);
     try {
       // Greeting is UI-only; the backend sees the real conversation (recommendations as text).
-      const res = await sendChat(next.slice(1).map(toBackendMessage));
+      const res = await sendChat(next.slice(1).map(toBackendMessage), fittingId);
       setMessages([
         ...next,
         { role: "assistant", content: res.reply, recommendation: res.recommendation ?? undefined },
       ]);
       setSuggestions(res.suggestions);
+      setFittingId(res.fitting_id);
       setStep({ current: res.step, total: res.total_steps || 4 });
     } catch (e) {
       setError(`Couldn't get an answer from the fitter. ${e instanceof Error ? e.message : ""}`);
@@ -87,6 +92,7 @@ export default function App() {
               <div className="msg-body">
                 <p className="bubble">{m.content}</p>
                 {m.recommendation && <RecommendationCard rec={m.recommendation} />}
+                {m.recommendation?.similar && <SimilarCard data={m.recommendation.similar} />}
               </div>
             </div>
           ))}
@@ -132,7 +138,9 @@ function toBackendMessage(m: Item): Message {
   if (!m.recommendation) return { role: m.role, content: m.content };
   const r = m.recommendation;
   const text =
-    `${m.content}\n[Recommendation] Irons: ${r.iron_set.name}. Shaft: ${r.shaft.name}. ` +
-    `Set: ${r.set_makeup}. Reasons: ${r.reasons.join(" ")} Adjustments: ${r.adjustments.join(" ")}`;
+    `${m.content}\n[Recommendation] Irons: ${r.iron_set.name}` +
+    (r.runner_up ? ` (runner-up ${r.runner_up.name})` : "") +
+    `. Shaft: ${r.shaft.name}. Grip: ${r.grip}. Length: ${r.length_in}in. Lie: ${r.lie_deg}deg. ` +
+    `${r.purchase}. Reasons: ${r.reasons.join(" ")} Adjustments: ${r.adjustments.join(" ")}`;
   return { role: m.role, content: text };
 }

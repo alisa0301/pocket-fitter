@@ -3,6 +3,7 @@ import logging
 from app.core.config import settings
 from app.decision import gemini_engine, jeff, rules
 from app.schemas import PlayerProfile, Recommendation
+from app.services import similar
 
 log = logging.getLogger(__name__)
 
@@ -16,13 +17,17 @@ def engine_name() -> str:
 
 async def decide(profile: PlayerProfile) -> Recommendation:
     """Pick the final clubs. Any engine failure falls back to the rule-based baseline."""
+    found = await similar.find(profile)  # Atlas Vector Search, shared by every engine
     name = engine_name()
     if name == "rules":
-        return rules.decide(profile)
+        return rules.decide(profile, found)
     try:
         if name == "jeff":
-            return await jeff.decide(profile)
-        return await gemini_engine.decide(profile)
+            rec = await jeff.decide(profile)
+        else:
+            rec = await gemini_engine.decide(profile, found)
     except Exception:
         log.exception("Decision engine %s failed; using rules", name)
-        return rules.decide(profile)
+        return rules.decide(profile, found)
+    rec.similar = rec.similar or found
+    return rec

@@ -33,15 +33,46 @@ Change the model with `GEMINI_MODEL`. Prompt lives in `backend/app/services/gemi
 
 ## How a fitting works
 
-1. **Interview** (`app/services/gemini.py`): Gemini asks one question at a time and, once it has
-   enough, returns a structured `PlayerProfile` (handicap, 7-iron carry, miss, age...).
-2. **Decision** (`app/decision/`): a pluggable engine picks the final iron set, shaft, set makeup and
-   adjustments from the catalog (`app/catalog.py`, **demo data** for now) and returns a `Recommendation`.
-   - `rules`: deterministic baseline, also the safety net if another engine fails
-   - `gemini`: LLM picks from the catalog (ids are validated), using the rules pick as a baseline
+1. **Interview** (`app/services/gemini.py`): Gemini runs Takomo's fitting questionnaire one question
+   at a time and, once it has enough, returns a structured `PlayerProfile` (score, 7-iron speed or
+   carry, priorities, flight, tempo, height, wrist-to-floor, glove...).
+2. **Golfers like you** (`app/services/similar.py`): the profile is matched against Takomo's 20,000
+   train golfers (Atlas Vector Search, or in memory without Atlas); what fitted the 50 nearest is
+   handed to every engine.
+3. **Decision** (`app/decision/`): a pluggable engine picks head, shaft, grip, length and lie from
+   Takomo's catalog (`app/data/takomo_products.json`) and returns a `Recommendation`.
+   - `rules`: deterministic pick from the similar golfers, also the safety net if another engine fails
+   - `gemini`: LLM picks from the catalog (spec validated as buildable), with the rules pick as a baseline
    - `jeff`: placeholder in `app/decision/jeff.py` for the Jeff decision model
    Choose with `DECISION_ENGINE=auto|rules|gemini|jeff` (`auto` = gemini if a key is set, else rules).
-3. The UI renders the recommendation as a card. `POST /api/decide` runs an engine on a profile directly.
+4. The UI renders the recommendation and a "Golfers like you" card. `POST /api/decide` runs an engine
+   on a profile directly.
+
+## MongoDB (optional)
+
+Set `MONGODB_URI` (e.g. a MongoDB Atlas connection string) in `backend/.env`. Without it the app
+reads the catalog from the bundled JSON and does not save fittings.
+
+- `products` / `catalog_meta`: Takomo's iron catalog (5 heads, 35 shafts, 3 grips, length/lie
+  options, fitting rules), loaded from `backend/app/data/takomo_products.json` by
+  `cd backend && uv run python -m app.seed` (idempotent; re-run after updating the JSON).
+  Served at `GET /api/products` and injected into the Gemini prompt.
+- `fittings`: one document per chat session (messages, step, profile, recommendation). `POST /api/chat`
+  returns a `fitting_id`; `GET /api/fittings/{id}` reads it back.
+
+- `golfers`: Takomo's 20,000 train golfers as vectors (questionnaire answers) plus their reference
+  fit, with an Atlas Vector Search index `golfer_vector` (created by the seed script).
+  `POST /api/similar` (a `PlayerProfile`) returns what fitted the 50 most similar golfers; the
+  decision engines use it and the chat shows a "Golfers like you" card. Without Atlas the same
+  search runs in memory over `backend/app/data/golfers_train.jsonl.gz`.
+
+Golfer vectors are built by `scripts/build_golfers.py` (re-run it after changing
+`app/services/similar.py`, then re-seed). `scripts/eval_similar.py` scores the approach on Takomo's
+dev split with Takomo's scorer: Spec Agreement Score 80.2 vs 77.1 for today's rules (questionnaire
+only, k=50; weights tuned on dev).
+
+For Cloud Run, store the URI in Secret Manager as `mongodb-uri` and add
+`MONGODB_URI=mongodb-uri:latest` to `secrets:` in `.github/workflows/deploy.yml`.
 
 ## Deploy (GitHub Actions -> Google Cloud Run)
 

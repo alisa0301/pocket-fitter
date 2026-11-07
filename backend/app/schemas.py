@@ -8,18 +8,52 @@ class Message(BaseModel):
     content: str
 
 
-Miss = Literal["slice", "hook", "thin_fat", "straight", "unknown"]
-
-
 class PlayerProfile(BaseModel):
-    """What the chat collects; input to the decision engine."""
+    """What the chat collects (Takomo's fitting questionnaire); input to the decision engine.
 
-    handicap: float | None = Field(None, description="Golf handicap; 36 for beginners")
-    seven_iron_carry_m: float | None = Field(None, description="7-iron carry distance in metres")
-    typical_miss: Miss = "unknown"
+    Everything is optional: engines fall back to population defaults for missing answers.
+    """
+
     age: int | None = None
-    looking_for: str = Field("", description="What clubs / goal the golfer mentioned")
-    notes: str = Field("", description="Anything else relevant (injuries, preferences)")
+    sex: Literal["male", "female"] | None = None
+    handedness: Literal["right", "left"] | None = None
+    score_bucket: int | None = Field(
+        None, ge=1, le=5, description="Typical 18-hole score: 1 Under 71, 2 71-77, 3 78-84, 4 85-92, 5 Over 92"
+    )
+    speed_mph: float | None = Field(None, description="7-iron club speed, if the golfer knows it")
+    carry_yd: float | None = Field(None, description="7-iron carry in yards otherwise")
+    characteristics: list[str] = Field(
+        default_factory=list,
+        description="Up to 3 of: forgiveness, distance, forged feel, distance control, workability, "
+        "less offset, more offset",
+    )
+    flight: Literal["low", "mid", "high"] | None = None
+    tempo: Literal["smooth", "moderate", "quick"] | None = None
+    height_cm: float | None = None
+    wrist_to_floor_cm: float | None = Field(None, description="Wrist crease to floor in golf shoes")
+    glove: Literal["XS", "S", "M", "M/L", "L", "XL"] | None = None
+
+
+class SpecShare(BaseModel):
+    value: str
+    share: float  # 0-1 of the similar golfers
+    label: str | None = None  # display name for heads and shafts
+
+
+class SimilarGolfers(BaseModel):
+    """What fitted the most similar golfers in Takomo's data."""
+
+    count: int
+    source: Literal["atlas_vector_search", "in_memory"]
+    head: list[SpecShare]
+    shaft: list[SpecShare]
+    flex: list[SpecShare]
+    material: list[SpecShare]
+    length_in: list[SpecShare]
+    lie_deg: list[SpecShare]
+    grip: list[SpecShare]
+    purchase: list[SpecShare]
+    expected_carry_yd: float | None = None
 
 
 class Option(BaseModel):
@@ -29,17 +63,24 @@ class Option(BaseModel):
 
 
 class Recommendation(BaseModel):
-    iron_set: Option
+    iron_set: Option  # Takomo head
     shaft: Option
-    set_makeup: str
+    runner_up: Option | None = None  # second head, as Takomo's tool shows two
+    grip: str = "standard"
+    length_in: float = 0  # vs standard
+    lie_deg: int = 0  # + upright, - flat
+    purchase: Literal["stock", "custom"] = "custom"
+    set_makeup: str = ""
     adjustments: list[str] = []
     reasons: list[str] = []
     confidence: float = Field(ge=0, le=1)
     engine: str
+    similar: SimilarGolfers | None = None
 
 
 class ChatIn(BaseModel):
     messages: list[Message]
+    fitting_id: str | None = None
 
 
 class ChatOut(BaseModel):
@@ -49,3 +90,4 @@ class ChatOut(BaseModel):
     total_steps: int = 0
     profile: PlayerProfile | None = None
     recommendation: Recommendation | None = None
+    fitting_id: str | None = None  # set when the fitting is saved to MongoDB

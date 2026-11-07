@@ -1,7 +1,8 @@
 """Placeholder for the Jeff decision model.
 
 Fill this in once we have Jeff's real API (endpoint, auth, request/response format).
-Contract the rest of the app expects: take a PlayerProfile, choose from app.catalog,
+Contract the rest of the app expects: take a PlayerProfile (Takomo questionnaire), choose from
+Takomo's catalog (app.services.catalog),
 return a Recommendation (with engine="jeff"). Enable with DECISION_ENGINE=jeff and JEFF_URL.
 """
 

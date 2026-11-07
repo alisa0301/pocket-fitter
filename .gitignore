@@ -15,3 +15,8 @@ dist/
 .idea/
 .vscode/
 *.tsbuildinfo
+# Local tools / archives
+google-cloud-sdk/
+__MACOSX/
+._*
+*.zip

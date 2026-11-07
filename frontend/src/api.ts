@@ -3,6 +3,24 @@ export interface Message {
   role: Role;
   content: string;
 }
+export interface SpecShare {
+  value: string;
+  share: number;
+  label?: string | null;
+}
+export interface SimilarGolfers {
+  count: number;
+  source: "atlas_vector_search" | "in_memory";
+  head: SpecShare[];
+  shaft: SpecShare[];
+  flex: SpecShare[];
+  material: SpecShare[];
+  length_in: SpecShare[];
+  lie_deg: SpecShare[];
+  grip: SpecShare[];
+  purchase: SpecShare[];
+  expected_carry_yd: number | null;
+}
 export interface Option {
   id: string;
   name: string;
@@ -11,11 +29,17 @@ export interface Option {
 export interface Recommendation {
   iron_set: Option;
   shaft: Option;
+  runner_up: Option | null;
+  grip: string;
+  length_in: number;
+  lie_deg: number;
+  purchase: "stock" | "custom";
   set_makeup: string;
   adjustments: string[];
   reasons: string[];
   confidence: number;
   engine: string;
+  similar: SimilarGolfers | null;
 }
 export interface ChatResponse {
   recommendation: Recommendation | null;
@@ -23,6 +47,7 @@ export interface ChatResponse {
   suggestions: string[];
   step: number;
   total_steps: number;
+  fitting_id: string | null;
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -37,5 +62,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const sendChat = (messages: Message[]) =>
-  api<ChatResponse>("/chat", { method: "POST", body: JSON.stringify({ messages }) });
+export const sendChat = (messages: Message[], fittingId: string | null) =>
+  api<ChatResponse>("/chat", {
+    method: "POST",
+    body: JSON.stringify({ messages, fitting_id: fittingId }),
+  });
